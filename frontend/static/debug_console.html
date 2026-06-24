@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Console</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .log { margin: 5px 0; padding: 5px; border-left: 3px solid #ccc; }
+        .debug { border-left-color: #2196F3; }
+        .error { border-left-color: #f44336; background: #ffebee; }
+        .warning { border-left-color: #ff9800; background: #fff3e0; }
+        .success { border-left-color: #4caf50; background: #e8f5e8; }
+    </style>
+</head>
+<body>
+    <h1>Debug Console</h1>
+    <div id="console-output"></div>
+    
+    <script>
+        // Override console methods to capture logs
+        const consoleOutput = document.getElementById('console-output');
+        const originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn
+        };
+        
+        function addLogEntry(message, type = 'debug') {
+            const entry = document.createElement('div');
+            entry.className = `log ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleOutput.appendChild(entry);
+            entry.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        console.log = function(...args) {
+            originalConsole.log.apply(console, args);
+            addLogEntry(args.join(' '), 'debug');
+        };
+        
+        console.error = function(...args) {
+            originalConsole.error.apply(console, args);
+            addLogEntry(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalConsole.warn.apply(console, args);
+            addLogEntry(args.join(' '), 'warning');
+        };
+        
+        // Add success method
+        console.success = function(...args) {
+            originalConsole.log.apply(console, args);
+            addLogEntry(args.join(' '), 'success');
+        };
+        
+        // Redirect to main app after 2 seconds
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 2000);
+    </script>
+</body>
+</html>
