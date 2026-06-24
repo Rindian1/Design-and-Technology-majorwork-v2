@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Energy Monitoring Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Date Navigation -->
+    <section class="date-navigation" aria-label="Date navigation">
+        <div class="nav-controls">
+            <button id="prev-day" class="nav-arrow nav-arrow-left" aria-label="Previous day" disabled>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+            </button>
+            
+            <div class="date-display">
+                <h2 id="current-date" class="current-date">Loading...</h2>
+                <p class="date-range">Showing hourly energy consumption</p>
+            </div>
+            
+            <button id="next-day" class="nav-arrow nav-arrow-right" aria-label="Next day">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </button>
+        </div>
+    </section>
+
+    <!-- Tab Panels -->
+    <div class="tab-panels">
+        <!-- Graph Tab Panel -->
+        <div id="graph-panel" class="tab-panel active" role="tabpanel" aria-labelledby="graph-tab">
+            <!-- Statistics Cards -->
+            <section class="statistics" aria-label="Energy statistics">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3 class="stat-title">Total Usage</h3>
+                        <p id="stat-total" class="stat-value">--</p>
+                        <p class="stat-unit">watts</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="stat-title">Average</h3>
+                        <p id="stat-average" class="stat-value">--</p>
+                        <p class="stat-unit">watts</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="stat-title">Peak Usage</h3>
+                        <p id="stat-peak" class="stat-value">--</p>
+                        <p class="stat-unit">watts</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="stat-title">Minimum</h3>
+                        <p id="stat-minimum" class="stat-value">--</p>
+                        <p class="stat-unit">watts</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chart Container -->
+            <section class="chart-container" aria-label="Energy consumption chart">
+                <div class="chart-header">
+                    <h3>Hourly Energy Consumption</h3>
+                    <div class="chart-controls">
+                        <button id="refresh-chart" class="btn btn-secondary" aria-label="Refresh chart data">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 4v6h-6M1 20v-6h6"/>
+                                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="energy-chart" class="chart-canvas" aria-label="Energy consumption bar chart"></canvas>
+                </div>
+                <div id="no-data-message" class="no-data-message hidden" aria-hidden="true">
+                    <p>No energy data available for this date.</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Recommendations Tab Panel -->
+        <div id="recommendations-panel" class="tab-panel" role="tabpanel" aria-labelledby="recommendations-tab" hidden>
+            <div class="recommendations-placeholder">
+                <div class="placeholder-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                </div>
+                <h2>Recommendations Coming Soon</h2>
+                <p>Energy-saving recommendations and insights will be available in a future update.</p>
+                <div class="feature-list">
+                    <h3>Planned Features:</h3>
+                    <ul>
+                        <li>Usage pattern analysis</li>
+                        <li>Energy-saving tips</li>
+                        <li>Cost optimization suggestions</li>
+                        <li>Environmental impact insights</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

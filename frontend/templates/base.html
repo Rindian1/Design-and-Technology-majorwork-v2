@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Energy Monitoring Dashboard - Track daily energy consumption">
+    <title>{% block title %}Energy Monitoring Dashboard{% endblock %}</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+</head>
+<body>
+    <header class="header" role="banner">
+        <div class="container">
+            <h1 class="logo">Energy Monitor</h1>
+            <nav class="nav" role="navigation" aria-label="Main navigation">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <button class="nav-btn active" data-tab="graph" aria-selected="true" aria-controls="graph-panel">
+                            Graph
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-btn" data-tab="recommendations" aria-selected="false" aria-controls="recommendations-panel">
+                            Recommendations
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main" role="main">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <p>&copy; 2026 Energy Monitoring System</p>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden" aria-hidden="true">
+        <div class="loading-spinner" aria-label="Loading data"></div>
+        <p class="loading-text">Loading energy data...</p>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="modal hidden" aria-hidden="true" role="dialog" aria-labelledby="error-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="error-title">Error</h2>
+                <button class="modal-close" aria-label="Close error modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="error-message">An error occurred while loading data.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/navigation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
