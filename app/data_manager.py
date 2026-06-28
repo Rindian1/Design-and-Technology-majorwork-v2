@@ -60,9 +60,12 @@ class EnergyDataManager:
     def validate_date_range(self, date_str: str):
         try:
             target = datetime.strptime(date_str, '%Y-%m-%d').date()
-            today = date.today()
-            two_weeks_ago = today - timedelta(days=TWO_WEEK_DAYS)
-            return two_weeks_ago <= target <= today
+            dr = self.get_available_dates()
+            if not dr:
+                return False
+            earliest = datetime.strptime(dr['earliest'], '%Y-%m-%d').date()
+            latest = datetime.strptime(dr['latest'], '%Y-%m-%d').date()
+            return earliest <= target <= latest
         except ValueError:
             return False
 
