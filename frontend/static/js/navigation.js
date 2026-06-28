@@ -10,6 +10,8 @@ class NavigationManager {
         this.currentTab = 'graph';
         this.maxDate = new Date().toISOString().split('T')[0]; // Today
         this.eventListenersSetup = false;
+        this._ready = new Promise(resolve => { this._resolveReady = resolve; });
+        this._readyResolved = false;
         
         this.init();
     }
@@ -57,6 +59,9 @@ class NavigationManager {
                 console.error('Fallback initialization also failed:', fallbackError);
                 this.showError('Failed to initialize navigation system');
             }
+        } finally {
+            this._resolveReady();
+            this._readyResolved = true;
         }
     }
 
@@ -67,6 +72,8 @@ class NavigationManager {
         try {
             this.dateRange = await energyAPI.getDateRange();
             if (this.dateRange) {
+                // Use the actual data range as max
+                this.maxDate = this.dateRange.latest;
                 // Ensure current date is within range
                 if (this.currentDate > this.dateRange.latest) {
                     this.currentDate = this.dateRange.latest;
@@ -121,7 +128,7 @@ class NavigationManager {
         }
 
         // Tab buttons
-        const tabButtons = document.querySelectorAll('.nav-btn');
+        const tabButtons = document.querySelectorAll('.tab-btn');
         tabButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tabName = e.target.getAttribute('data-tab');
@@ -331,7 +338,7 @@ class NavigationManager {
      */
     updateTabDisplay() {
         // Update button states
-        const tabButtons = document.querySelectorAll('.nav-btn');
+        const tabButtons = document.querySelectorAll('.tab-btn');
         tabButtons.forEach(btn => {
             const tabName = btn.getAttribute('data-tab');
             const isActive = tabName === this.currentTab;
