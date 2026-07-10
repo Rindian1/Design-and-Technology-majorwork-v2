@@ -79,6 +79,13 @@ class EnergyAPI {
     }
 
     /**
+     * Get recommendations for a specific date
+     */
+    async getRecommendations(date) {
+        return this.request(`/api/recommendations/${date}`);
+    }
+
+    /**
      * Health check
      */
     async healthCheck() {

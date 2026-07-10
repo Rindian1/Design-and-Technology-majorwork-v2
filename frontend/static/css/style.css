@@ -249,16 +249,43 @@ body {
 .mini-stat .val small { font-size: 12px; font-weight: 400; color: #888; margin-left: 2px; }
 
 /* ── Recommendations Tab ── */
-.recs-placeholder {
+.recs-list { display: flex; flex-direction: column; gap: 10px; }
+.rec-card {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  border-left: 3px solid #555;
+}
+.rec-card.severity-info { border-left-color: #00e676; }
+.rec-card.severity-warning { border-left-color: #ffab00; }
+.rec-card.severity-danger { border-left-color: #ff5252; }
+.rec-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; line-height: 1; }
+.rec-body { flex: 1; min-width: 0; }
+.rec-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #eee;
+  margin-bottom: 4px;
+}
+.rec-description {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.5;
+}
+.recs-state {
   text-align: center;
   padding: 48px 24px;
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 24px;
 }
-.recs-placeholder .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
-.recs-placeholder h2 { font-size: 18px; color: #888; margin-bottom: 8px; font-weight: 500; }
-.recs-placeholder p { font-size: 13px; color: #555; }
+.recs-state-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
+.recs-state-text { font-size: 13px; color: #666; margin-top: 12px; }
+.recs-state .loading-spinner { margin: 0 auto 12px; }
+.recs-error .recs-state-text { color: #ff5252; }
 
 /* ── Tab Panels ── */
 .tab-panel { display: none; }
