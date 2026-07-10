@@ -1,9 +1,10 @@
 from flask import render_template, jsonify
 from datetime import datetime
 
-from app.data_manager import EnergyDataManager, GraphDataProcessor
+from app.data_manager import EnergyDataManager, GraphDataProcessor, RecommendationEngine
 
 data_manager = EnergyDataManager()
+rec_engine = RecommendationEngine()
 
 
 def register_routes(app):
@@ -36,6 +37,18 @@ def register_routes(app):
         if not date_range:
             return jsonify({'error': 'No date range available'}), 404
         return jsonify(date_range)
+
+    @app.route('/api/recommendations/<date>')
+    def get_recommendations(date):
+        if not data_manager.validate_date_range(date):
+            return jsonify({'error': 'Date out of range'}), 400
+        recs = rec_engine.get_recommendations(date)
+        return jsonify({
+            'date': date,
+            'budget_kwh': 30,
+            'rate_per_kwh': 0.30,
+            'recommendations': recs
+        })
 
     @app.route('/api/health')
     def health_check():

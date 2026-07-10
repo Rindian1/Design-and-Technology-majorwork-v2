@@ -41,11 +41,11 @@ class EnergyDashboard {
 
   async waitForNavigation() {
     let attempts = 0;
-    while (!window.navigation && attempts < 50) {
+    while (typeof navigation === 'undefined' && attempts < 50) {
       await new Promise(r => setTimeout(r, 100));
       attempts++;
     }
-    if (!window.navigation) {
+    if (typeof navigation === 'undefined') {
       throw new Error('Navigation system failed to initialize');
     }
     await navigation._ready;
@@ -55,6 +55,15 @@ class EnergyDashboard {
     window.addEventListener('dateChanged', (e) => {
       const { date } = e.detail;
       gaugeManager.loadDataForDate(date);
+      if (navigation.getCurrentTab() === 'recommendations') {
+        recsManager.loadRecommendations(date);
+      }
+    });
+    window.addEventListener('tabChanged', (e) => {
+      if (e.detail.tab === 'recommendations') {
+        const date = navigation.getCurrentDate();
+        recsManager.loadRecommendations(date);
+      }
     });
   }
 
@@ -62,6 +71,9 @@ class EnergyDashboard {
     try {
       const date = navigation.getCurrentDate();
       gaugeManager.loadDataForDate(date);
+      if (navigation.getCurrentTab() === 'recommendations') {
+        recsManager.loadRecommendations(date);
+      }
     } catch (err) {
       console.error('Failed to load initial data:', err);
     }
