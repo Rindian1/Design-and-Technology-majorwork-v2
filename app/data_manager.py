@@ -1,11 +1,9 @@
+import json
 from datetime import datetime, timedelta, date
 from sqlalchemy import func
 
-from app.models import HeatingUsage, DatabaseSession
+from app.models import HeatingUsage, UserProfile, DatabaseSession
 from config import HEATING_DB_PATH, TWO_WEEK_DAYS, ELECTRICITY_RATE_CENTS_PER_KWH
-
-RATE_PER_KWH = ELECTRICITY_RATE_CENTS_PER_KWH / 100
-BUDGET_KWH = 30
 
 TIPS_POOL = [
     "Lowering your thermostat by 1\u00b0C can reduce heating costs by up to 10%.",
@@ -21,15 +19,28 @@ TIPS_POOL = [
 ]
 
 
+def _load_user_profile(session, user_id):
+    """Load survey_data from UserProfile and return parsed dict or defaults."""
+    profile = session.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+    if profile and profile.survey_data:
+        data = json.loads(profile.survey_data)
+        budget = data.get('daily_budget_kwh', 30)
+        rate = data.get('electricity_rate_cents', 30) / 100
+        appliances = data.get('appliances', [])
+        has_tou = data.get('has_tou', 'no')
+        return {'budget_kwh': budget, 'rate_per_kwh': rate, 'appliances': appliances, 'has_tou': has_tou}
+    return {'budget_kwh': 30, 'rate_per_kwh': ELECTRICITY_RATE_CENTS_PER_KWH / 100, 'appliances': [], 'has_tou': 'no'}
+
+
 class EnergyDataManager:
     def __init__(self, db_path: str = HEATING_DB_PATH):
         self.db = DatabaseSession(db_path)
 
-    def fetch_daily_data(self, target_date: str):
+    def fetch_daily_data(self, target_date: str, user_id: int = 1):
         session = self.db.get_session()
         try:
             parsed = datetime.strptime(target_date, '%Y-%m-%d').date()
-            records = HeatingUsage.get_by_date(session, parsed)
+            records = HeatingUsage.get_by_date(session, parsed, user_id=user_id)
             return [
                 {
                     'timestamp': r.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
@@ -41,11 +52,11 @@ class EnergyDataManager:
         finally:
             session.close()
 
-    def calculate_statistics(self, target_date: str):
+    def calculate_statistics(self, target_date: str, user_id: int = 1):
         session = self.db.get_session()
         try:
             parsed = datetime.strptime(target_date, '%Y-%m-%d').date()
-            result = HeatingUsage.get_statistics(session, parsed)
+            result = HeatingUsage.get_statistics(session, parsed, user_id=user_id)
             if result and result.count > 0:
                 return {
                     'count': result.count,
@@ -58,10 +69,10 @@ class EnergyDataManager:
         finally:
             session.close()
 
-    def get_available_dates(self):
+    def get_available_dates(self, user_id: int = 1):
         session = self.db.get_session()
         try:
-            result = HeatingUsage.get_date_range(session)
+            result = HeatingUsage.get_date_range(session, user_id=user_id)
             if result and result.earliest and result.latest:
                 latest = result.latest
                 if TWO_WEEK_DAYS > 0:
@@ -76,10 +87,10 @@ class EnergyDataManager:
         finally:
             session.close()
 
-    def validate_date_range(self, date_str: str):
+    def validate_date_range(self, date_str: str, user_id: int = 1):
         try:
             target = datetime.strptime(date_str, '%Y-%m-%d').date()
-            dr = self.get_available_dates()
+            dr = self.get_available_dates(user_id=user_id)
             if not dr:
                 return False
             earliest = datetime.strptime(dr['earliest'], '%Y-%m-%d').date()
@@ -87,6 +98,13 @@ class EnergyDataManager:
             return earliest <= target <= latest
         except ValueError:
             return False
+
+    def get_user_profile(self, user_id: int):
+        session = self.db.get_session()
+        try:
+            return _load_user_profile(session, user_id)
+        finally:
+            session.close()
 
 
 class GraphDataProcessor:
@@ -117,25 +135,29 @@ class RecommendationEngine:
     def __init__(self, db_path: str = HEATING_DB_PATH):
         self.db = DatabaseSession(db_path)
 
-    def get_recommendations(self, date_str: str):
+    def get_recommendations(self, date_str: str, user_id: int = 1):
         session = self.db.get_session()
         try:
+            profile = _load_user_profile(session, user_id)
+            budget_kwh = profile['budget_kwh']
+            rate_per_kwh = profile['rate_per_kwh']
+
             parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
-            today_stats = HeatingUsage.get_statistics(session, parsed)
+            today_stats = HeatingUsage.get_statistics(session, parsed, user_id=user_id)
             if not today_stats or today_stats.count == 0:
                 return []
 
             today_total_kwh = (today_stats.total or 0) / 1000
-            today_records = HeatingUsage.get_by_date(session, parsed)
+            today_records = HeatingUsage.get_by_date(session, parsed, user_id=user_id)
             recs = []
 
             # 1. Comparison with yesterday
             yesterday = parsed - timedelta(days=1)
-            yesterday_stats = HeatingUsage.get_statistics(session, yesterday)
+            yesterday_stats = HeatingUsage.get_statistics(session, yesterday, user_id=user_id)
             if yesterday_stats and yesterday_stats.count > 0:
                 yest_total_kwh = (yesterday_stats.total or 0) / 1000
                 diff_pct = ((today_total_kwh - yest_total_kwh) / yest_total_kwh) * 100
-                cost_diff = abs(today_total_kwh - yest_total_kwh) * RATE_PER_KWH
+                cost_diff = abs(today_total_kwh - yest_total_kwh) * rate_per_kwh
                 if diff_pct > 5:
                     recs.append({
                         'type': 'comparison', 'icon': '\U0001f4ca',
@@ -171,11 +193,11 @@ class RecommendationEngine:
 
             # 2. Comparison with last week
             last_week = parsed - timedelta(days=7)
-            lw_stats = HeatingUsage.get_statistics(session, last_week)
+            lw_stats = HeatingUsage.get_statistics(session, last_week, user_id=user_id)
             if lw_stats and lw_stats.count > 0:
                 lw_total_kwh = (lw_stats.total or 0) / 1000
                 diff_pct = ((today_total_kwh - lw_total_kwh) / lw_total_kwh) * 100
-                cost_diff = abs(today_total_kwh - lw_total_kwh) * RATE_PER_KWH
+                cost_diff = abs(today_total_kwh - lw_total_kwh) * rate_per_kwh
                 if diff_pct > 5:
                     recs.append({
                         'type': 'comparison', 'icon': '\U0001f5d3\ufe0f',
@@ -210,17 +232,17 @@ class RecommendationEngine:
                     })
 
             # 3. Budget status
-            budget_pct = (today_total_kwh / BUDGET_KWH) * 100
+            budget_pct = (today_total_kwh / budget_kwh) * 100
             if budget_pct > 100:
                 over_pct = budget_pct - 100
-                over_cost = (today_total_kwh - BUDGET_KWH) * RATE_PER_KWH
+                over_cost = (today_total_kwh - budget_kwh) * rate_per_kwh
                 recs.append({
                     'type': 'budget', 'icon': '\U0001f3af',
                     'severity': 'danger',
                     'title': f'{over_pct:.0f}% over budget',
                     'description': (
                         f"Today's usage ({today_total_kwh:.1f} kWh) exceeded your "
-                        f"{BUDGET_KWH} kWh budget by {over_pct:.0f}%. "
+                        f"{budget_kwh} kWh budget by {over_pct:.0f}%. "
                         f"That's ${over_cost:.2f} over budget."
                     )
                 })
@@ -231,18 +253,18 @@ class RecommendationEngine:
                     'title': f'{budget_pct:.0f}% of budget used',
                     'description': (
                         f"Today's usage ({today_total_kwh:.1f} kWh) is "
-                        f"{budget_pct:.0f}% of your {BUDGET_KWH} kWh budget."
+                        f"{budget_pct:.0f}% of your {budget_kwh} kWh budget."
                     )
                 })
             else:
-                remaining = BUDGET_KWH - today_total_kwh
+                remaining = budget_kwh - today_total_kwh
                 recs.append({
                     'type': 'budget', 'icon': '\U0001f3af',
                     'severity': 'info',
                     'title': f'{budget_pct:.0f}% of budget used',
                     'description': (
                         f"Today's usage ({today_total_kwh:.1f} kWh) is well within "
-                        f"your {BUDGET_KWH} kWh budget. You have {remaining:.1f} kWh to spare."
+                        f"your {budget_kwh} kWh budget. You have {remaining:.1f} kWh to spare."
                     )
                 })
 
@@ -277,7 +299,7 @@ class RecommendationEngine:
             historical_totals = []
             for i in range(1, 8):
                 d = parsed - timedelta(days=i)
-                s = HeatingUsage.get_statistics(session, d)
+                s = HeatingUsage.get_statistics(session, d, user_id=user_id)
                 if s and s.count > 0:
                     historical_totals.append((s.total or 0) / 1000)
             if len(historical_totals) >= 3:
@@ -338,7 +360,6 @@ class RecommendationEngine:
                         })
 
             # 7. Tips (conditional + static)
-            # Conditional tip based on peak period
             if today_records:
                 peak_record = max(today_records, key=lambda r: r.watt_usage)
                 peak_hour = peak_record.timestamp.hour
@@ -353,7 +374,6 @@ class RecommendationEngine:
                         )
                     })
 
-            # Overnight-specific tip
             if today_records:
                 overnight_hours = [r for r in today_records
                                    if r.timestamp.hour >= 23 or r.timestamp.hour < 6]
@@ -371,7 +391,6 @@ class RecommendationEngine:
                             )
                         })
 
-            # Static tip (rotated by day of year for variety)
             tip_index = parsed.timetuple().tm_yday % len(TIPS_POOL)
             recs.append({
                 'type': 'tip', 'icon': '\U0001f4a1',

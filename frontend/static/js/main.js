@@ -16,11 +16,59 @@ class EnergyDashboard {
   }
 
   async initialize() {
+    const authPages = ['/login', '/register'];
+    if (authPages.includes(window.location.pathname)) {
+      return;
+    }
+
+    const session = await authManager.checkSession();
+    if (!session) {
+      window.location.href = '/login';
+      return;
+    }
+
+    try {
+      const profile = await energyAPI.getProfile();
+      if (profile && gaugeManager.setConfig) {
+        gaugeManager.setConfig(profile.budget_kwh, profile.rate_per_kwh);
+      }
+    } catch (err) {
+      console.error('Failed to load profile config:', err);
+    }
+
     this.setupErrorModal();
+    this.setupUserMenu(session);
     await this.waitForNavigation();
     this.listenForDateChanges();
     this.setupErrorHandlers();
     await this.loadInitialData();
+  }
+
+  setupUserMenu(session) {
+    const menu = document.getElementById('user-menu');
+    const emailDisplay = document.getElementById('user-email-display');
+    if (menu && emailDisplay && session && session.user) {
+      emailDisplay.textContent = session.user.email;
+      menu.style.display = 'block';
+    }
+
+    const menuBtn = document.getElementById('user-menu-btn');
+    const dropdown = document.getElementById('user-dropdown');
+    if (menuBtn && dropdown) {
+      menuBtn.addEventListener('click', () => {
+        dropdown.classList.toggle('open');
+      });
+      document.addEventListener('click', (e) => {
+        if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+          dropdown.classList.remove('open');
+        }
+      });
+    }
+
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await authManager.logout();
+      window.location.href = '/login';
+    });
   }
 
   setupErrorModal() {

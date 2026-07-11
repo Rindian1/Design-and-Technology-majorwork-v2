@@ -1,6 +1,4 @@
 const SEGMENTS = 20;
-const BUDGET_KWH = 30;
-const RATE_PER_KWH = 0.30;
 
 const CX = 170;
 const CY = 185;
@@ -18,9 +16,16 @@ class GaugeManager {
   constructor() {
     this.currentData = null;
     this.currentStats = null;
+    this.budgetKwh = 30;
+    this.ratePerKwh = 0.30;
     this.svg = document.getElementById('energy-gauge');
     this.initSegments();
     this.updateDisplay(null, null);
+  }
+
+  setConfig(budgetKwh, ratePerKwh) {
+    if (budgetKwh != null) this.budgetKwh = budgetKwh;
+    if (ratePerKwh != null) this.ratePerKwh = ratePerKwh;
   }
 
   initSegments() {
@@ -70,8 +75,8 @@ class GaugeManager {
     const totalKwh = s.total / 1000;
     const peakKw = s.peak / 1000;
     const avgKw = s.average / 1000;
-    const cost = totalKwh * RATE_PER_KWH;
-    const fillRatio = Math.min(totalKwh / BUDGET_KWH, 1);
+    const cost = totalKwh * this.ratePerKwh;
+    const fillRatio = Math.min(totalKwh / this.budgetKwh, 1);
     const filled = Math.round(fillRatio * SEGMENTS);
 
     this.drawSegments(filled);

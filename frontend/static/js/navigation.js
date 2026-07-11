@@ -20,10 +20,18 @@ class NavigationManager {
      * Initialize navigation system
      */
     async init() {
+        const authPages = ['/login', '/register'];
+        const isAuthPage = authPages.includes(window.location.pathname);
+
         try {
-            // Setup event listeners first - this ensures buttons work even if API fails
             this.setupEventListeners();
-            
+
+            if (isAuthPage) {
+                this._resolveReady();
+                this._readyResolved = true;
+                return;
+            }
+
             // Load date range from API
             await this.loadDateRange();
             
