@@ -1,4 +1,5 @@
 import os
+import secrets
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
@@ -13,6 +14,8 @@ FRONTEND_DIR = BASE_DIR / "frontend"
 FLASK_HOST = os.getenv("FLASK_HOST", "0.0.0.0")
 FLASK_PORT = int(os.getenv("FLASK_PORT", "5005"))
 FLASK_DEBUG = os.getenv("FLASK_DEBUG", "True").lower() == "true"
+
+SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
 POLL_INTERVAL_SECONDS = 10
 ELECTRICITY_RATE_CENTS_PER_KWH = 30

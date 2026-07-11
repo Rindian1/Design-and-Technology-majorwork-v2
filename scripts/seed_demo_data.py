@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import sqlite3
@@ -7,6 +8,7 @@ import datetime
 import random
 
 from config import HEATING_DB_PATH
+from app.models import DatabaseSession
 
 random.seed(42)
 
@@ -16,8 +18,8 @@ NUM_DAYS = 90
 TARGET_START_KWH = 28.0
 TARGET_END_KWH = 16.0
 RELAPSE_DAYS = {68, 76, 83, 88}
+DEMO_USER_ID = 1
 
-# Relative hourly distribution shapes (normalised at runtime)
 BEFORE_SHAPE = [
     0.022, 0.022, 0.022, 0.022, 0.022, 0.022,
     0.030, 0.040, 0.030,
@@ -79,20 +81,60 @@ def generate_day_hours(shape, target_total_wh, is_weekend, is_relapse, noise_lev
     return [max(0, min(3500, int(round(v)))) for v in hours]
 
 
+def ensure_demo_user():
+    """Create demo user + profile if they don't exist."""
+    db = DatabaseSession(HEATING_DB_PATH)
+    db.create_tables()
+    session_db = db.get_session()
+    try:
+        from app.models import User, UserProfile
+        from werkzeug.security import generate_password_hash
+
+        user = session_db.query(User).filter(User.id == DEMO_USER_ID).first()
+        if not user:
+            user = User(
+                id=DEMO_USER_ID,
+                email='demo@example.com',
+                password_hash=generate_password_hash('demo'),
+                created_at=datetime.datetime.now(),
+            )
+            session_db.add(user)
+            session_db.flush()
+
+        profile = session_db.query(UserProfile).filter(UserProfile.user_id == DEMO_USER_ID).first()
+        if not profile:
+            profile = UserProfile(
+                user_id=DEMO_USER_ID,
+                survey_data=json.dumps({
+                    'home_type': 'house',
+                    'occupants': 4,
+                    'bedrooms': 3,
+                    'heating_type': 'electric',
+                    'appliances': ['washer', 'dryer', 'dishwasher', 'oven'],
+                    'has_tou': 'yes',
+                    'daily_budget_kwh': 30,
+                    'electricity_rate_cents': 30,
+                    'goal': 'save_money',
+                }),
+            )
+            session_db.add(profile)
+        session_db.commit()
+    finally:
+        session_db.close()
+        db.close()
+
+
 def seed_demo_data():
+    ensure_demo_user()
+
     conn = sqlite3.connect(HEATING_DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS heating_usage (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp DATETIME NOT NULL,
-            watt_usage INTEGER NOT NULL,
-            daily_usage_hours REAL NOT NULL,
-            date DATE NOT NULL
-        )
-    ''')
-    conn.commit()
+    # Ensure heating_usage table has user_id column
+    cursor.execute("PRAGMA table_info(heating_usage)")
+    cols = [row[1] for row in cursor.fetchall()]
+    if 'user_id' not in cols:
+        cursor.execute("ALTER TABLE heating_usage ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1")
 
     cursor.execute("DELETE FROM heating_usage")
     conn.commit()
@@ -120,8 +162,8 @@ def seed_demo_data():
             if watt_usage > 50:
                 daily_usage_hours += 1
             cursor.execute(
-                "INSERT INTO heating_usage (timestamp, watt_usage, daily_usage_hours, date) VALUES (?, ?, ?, ?)",
-                (timestamp, watt_usage, daily_usage_hours, current_date),
+                "INSERT INTO heating_usage (timestamp, watt_usage, daily_usage_hours, date, user_id) VALUES (?, ?, ?, ?, ?)",
+                (timestamp, watt_usage, daily_usage_hours, current_date, DEMO_USER_ID),
             )
             total_records += 1
 
@@ -136,7 +178,7 @@ def seed_demo_data():
     conn.close()
 
     print()
-    print(f"  ─────────────────────────────────────────────")
+    print(f"  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500")
     totals = [s[1] for s in day_stats]
     print(f"  Records:    {total_records}")
     print(f"  Range:      {START_DATE} \u2192 {START_DATE + datetime.timedelta(days=NUM_DAYS - 1)}")
@@ -144,6 +186,7 @@ def seed_demo_data():
     print(f"  kWh range:  {min(totals):.1f} \u2192 {max(totals):.1f}")
     print(f"  kWh avg:    {sum(totals)/len(totals):.1f}")
     print(f"  Relapses:   {len(RELAPSE_DAYS)} days ({', '.join(str(d+1) for d in sorted(RELAPSE_DAYS))})")
+    print(f"  User ID:    {DEMO_USER_ID}")
 
 
 if __name__ == "__main__":

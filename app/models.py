@@ -1,13 +1,41 @@
 from sqlalchemy import (
-    Column, Integer, Float, DateTime, Date, Text,
-    create_engine, UniqueConstraint, Index
+    Column, Integer, Float, DateTime, Date, Text, String,
+    create_engine, UniqueConstraint, Index, ForeignKey
 )
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy import func
 
 from config import HEATING_DB_PATH
 
 Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(255), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+
+    profile = relationship('UserProfile', uselist=False, back_populates='user')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class UserProfile(Base):
+    __tablename__ = 'user_profiles'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), unique=True, nullable=False)
+    survey_data = Column(Text, nullable=True)  # JSON blob
+
+    user = relationship('User', back_populates='profile')
 
 
 class HeatingUsage(Base):
@@ -18,6 +46,7 @@ class HeatingUsage(Base):
     watt_usage = Column(Integer, nullable=False)
     daily_usage_hours = Column(Float, nullable=False)
     date = Column(Date, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, default=1)
 
     def to_dict(self):
         return {
@@ -26,29 +55,30 @@ class HeatingUsage(Base):
             'watt_usage': self.watt_usage,
             'daily_usage_hours': self.daily_usage_hours,
             'date': self.date.isoformat() if self.date else None,
+            'user_id': self.user_id,
         }
 
     @classmethod
-    def get_by_date(cls, session, target_date):
-        return session.query(cls).filter(cls.date == target_date).order_by(cls.timestamp).all()
+    def get_by_date(cls, session, target_date, user_id=1):
+        return session.query(cls).filter(cls.date == target_date, cls.user_id == user_id).order_by(cls.timestamp).all()
 
     @classmethod
-    def get_statistics(cls, session, target_date):
+    def get_statistics(cls, session, target_date, user_id=1):
         result = session.query(
             func.count(cls.id).label('count'),
             func.avg(cls.watt_usage).label('average'),
             func.max(cls.watt_usage).label('peak'),
             func.min(cls.watt_usage).label('minimum'),
             func.sum(cls.watt_usage).label('total'),
-        ).filter(cls.date == target_date).first()
+        ).filter(cls.date == target_date, cls.user_id == user_id).first()
         return result
 
     @classmethod
-    def get_date_range(cls, session):
+    def get_date_range(cls, session, user_id=1):
         result = session.query(
             func.min(cls.date).label('earliest'),
             func.max(cls.date).label('latest'),
-        ).first()
+        ).filter(cls.user_id == user_id).first()
         return result
 
 
