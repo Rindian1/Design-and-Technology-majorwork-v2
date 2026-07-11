@@ -16,7 +16,7 @@ FLASK_DEBUG = os.getenv("FLASK_DEBUG", "True").lower() == "true"
 
 POLL_INTERVAL_SECONDS = 10
 ELECTRICITY_RATE_CENTS_PER_KWH = 30
-TWO_WEEK_DAYS = 14
+TWO_WEEK_DAYS = 0  # 0 = show all available dates (no rolling-window cap)
 
 PLUGS_CONFIG = {
     "living_room_plug": "192.168.0.181",
