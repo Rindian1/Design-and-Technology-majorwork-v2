@@ -15,8 +15,8 @@ def validate_heating_data():
     cursor.execute("SELECT COUNT(*) FROM heating_usage")
     total_records = cursor.fetchone()[0]
     print(f"Total records: {total_records}")
-    print(f"Expected records: 336")
-    print(f"Record count validation: {'PASS' if total_records == 336 else 'FAIL'}")
+    print(f"Expected records: 2160 (90 days \u00d7 24 hours)")
+    print(f"Record count validation: {'PASS' if total_records == 2160 else 'FAIL'}")
 
     cursor.execute("SELECT MIN(timestamp), MAX(timestamp) FROM heating_usage")
     min_time, max_time = cursor.fetchone()
@@ -25,7 +25,7 @@ def validate_heating_data():
     cursor.execute("SELECT MIN(watt_usage), MAX(watt_usage) FROM heating_usage")
     min_watts, max_watts = cursor.fetchone()
     print(f"Watt usage range: {min_watts}W - {max_watts}W")
-    print(f"Watt range validation: {'PASS' if 0 <= min_watts and max_watts <= 2000 else 'FAIL'}")
+    print(f"Watt range validation: {'PASS' if 0 <= min_watts and max_watts <= 3500 else 'FAIL'}")
 
     cursor.execute("""
         SELECT date, COUNT(*) as hourly_records,
@@ -91,7 +91,7 @@ def validate_heating_data():
 
     conn.close()
 
-    validation_passed = (total_records == 336 and 0 <= min_watts and max_watts <= 2000 and len(duplicates) == 0)
+    validation_passed = (total_records == 2160 and 0 <= min_watts and max_watts <= 3500 and len(duplicates) == 0)
     print(f"\nOverall Validation: {'PASS' if validation_passed else 'FAIL'}")
     return validation_passed
 

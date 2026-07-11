@@ -64,7 +64,10 @@ class EnergyDataManager:
             result = HeatingUsage.get_date_range(session)
             if result and result.earliest and result.latest:
                 latest = result.latest
-                earliest = max(result.earliest, latest - timedelta(days=TWO_WEEK_DAYS))
+                if TWO_WEEK_DAYS > 0:
+                    earliest = max(result.earliest, latest - timedelta(days=TWO_WEEK_DAYS))
+                else:
+                    earliest = result.earliest
                 return {
                     'earliest': earliest.isoformat(),
                     'latest': latest.isoformat(),
