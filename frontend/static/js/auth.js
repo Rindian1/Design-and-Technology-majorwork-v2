@@ -265,6 +265,11 @@ class AuthManager {
     _collectStepAnswers(container, questions, answers) {
         questions.forEach(q => {
             if (q.type === 'subheading') return;
+            const fieldWrap = container.querySelector(`.survey-field-wrap[data-qid="${q.id}"]`);
+            if (fieldWrap && fieldWrap.style.display === 'none') {
+                delete answers[q.id];
+                return;
+            }
             if (q.type === 'timerange') {
                 const wrap = container.querySelector(`#tr-${q.id}`);
                 if (!wrap) return;
@@ -348,6 +353,8 @@ class AuthManager {
 
     _isVisible(container, question) {
         if (!question.depends_on) return true;
+        const controlWrap = container.querySelector(`.survey-field-wrap[data-qid="${question.depends_on.question}"]`);
+        if (controlWrap && controlWrap.style.display === 'none') return false;
         const controlEl = container.querySelector(`#survey-${question.depends_on.question}`);
         if (!controlEl) return true;
         return controlEl.value === question.depends_on.value;
@@ -358,15 +365,24 @@ class AuthManager {
             if (!q.depends_on) return;
             const wrap = container.querySelector(`.survey-field-wrap[data-qid="${q.id}"]`);
             if (!wrap) return;
+            const wasVisible = wrap.style.display !== 'none';
             const visible = this._isVisible(container, q);
             wrap.style.display = visible ? '' : 'none';
 
-            if (q.type === 'timerange' && visible) {
-                if (!answers[q.id] || answers[q.id].length === 0) {
-                    answers[q.id] = [{ start: '', end: '' }];
+            if (q.type === 'timerange') {
+                if (visible && !wasVisible) {
+                    if (!answers[q.id] || answers[q.id].length === 0) {
+                        answers[q.id] = [{ start: '', end: '' }];
+                    }
+                    this._renderTimerangeRows(container, q.id, answers[q.id]);
+                    this._wireTimerange(container, q.id, answers);
                 }
-                this._renderTimerangeRows(container, q.id, answers[q.id]);
-                this._wireTimerange(container, q.id, answers);
+            }
+
+            if (!visible && wasVisible) {
+                delete answers[q.id];
+                const el = container.querySelector(`#survey-${q.id}`);
+                if (el) el.value = '';
             }
         });
         this._updateNextButton(container, questions, answers);
