@@ -70,10 +70,17 @@ class EnergyAPI {
 
     // ── Auth methods ──
 
-    async register(email, password, surveyData) {
+    async register(email, password) {
         return this.request('/api/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ email, password, survey_data: surveyData }),
+            body: JSON.stringify({ email, password }),
+        });
+    }
+
+    async submitSurvey(surveyData) {
+        return this.request('/api/auth/survey', {
+            method: 'POST',
+            body: JSON.stringify({ survey_data: surveyData }),
         });
     }
 

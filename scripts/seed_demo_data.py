@@ -90,6 +90,16 @@ def ensure_demo_user():
         from app.models import User, UserProfile
         from werkzeug.security import generate_password_hash
 
+        demo_survey = json.dumps({
+            'appliance_type': 'heater',
+            'power_rating': '2400',
+            'appliance_model': 'Dyson Hot+Cool HP07',
+            'knows_plan': 'yes',
+            'plan_type': 'single',
+            'single_usage_charge': '27.5',
+            'intentions': ['reduce_bill', 'monitor'],
+        })
+
         user = session_db.query(User).filter(User.id == DEMO_USER_ID).first()
         if not user:
             user = User(
@@ -105,19 +115,11 @@ def ensure_demo_user():
         if not profile:
             profile = UserProfile(
                 user_id=DEMO_USER_ID,
-                survey_data=json.dumps({
-                    'home_type': 'house',
-                    'occupants': 4,
-                    'bedrooms': 3,
-                    'heating_type': 'electric',
-                    'appliances': ['washer', 'dryer', 'dishwasher', 'oven'],
-                    'has_tou': 'yes',
-                    'daily_budget_kwh': 30,
-                    'electricity_rate_cents': 30,
-                    'goal': 'save_money',
-                }),
+                survey_data=demo_survey,
             )
             session_db.add(profile)
+        else:
+            profile.survey_data = demo_survey
         session_db.commit()
     finally:
         session_db.close()
