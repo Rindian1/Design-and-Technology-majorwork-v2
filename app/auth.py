@@ -26,7 +26,6 @@ def register():
 
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
-    survey_data = data.get('survey_data')
 
     if not email or not password:
         return jsonify({'error': 'Email and password are required'}), 400
@@ -47,19 +46,44 @@ def register():
             created_at=datetime.now(),
         )
         session_db.add(user)
-        session_db.flush()
-
-        profile = UserProfile(
-            user_id=user.id,
-            survey_data=json.dumps(survey_data) if survey_data else None,
-        )
-        session_db.add(profile)
         session_db.commit()
 
         session['user_id'] = user.id
         session['email'] = user.email
 
-        return jsonify({'user': user.to_dict(), 'survey_data': survey_data}), 201
+        return jsonify({'user': user.to_dict()}), 201
+    finally:
+        session_db.close()
+        db.close()
+
+
+@auth_bp.route('/api/auth/survey', methods=['POST'])
+def save_survey():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    data = request.get_json()
+    if not data or 'survey_data' not in data:
+        return jsonify({'error': 'survey_data is required'}), 400
+
+    survey_data = data['survey_data']
+
+    db = DatabaseSession(HEATING_DB_PATH)
+    try:
+        session_db = db.get_session()
+        profile = session_db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+        if profile:
+            profile.survey_data = json.dumps(survey_data)
+        else:
+            profile = UserProfile(
+                user_id=user_id,
+                survey_data=json.dumps(survey_data),
+            )
+            session_db.add(profile)
+        session_db.commit()
+
+        return jsonify({'status': 'ok', 'survey_data': survey_data})
     finally:
         session_db.close()
         db.close()
@@ -149,18 +173,26 @@ def demo_login():
                 profile = UserProfile(
                     user_id=DEMO_USER_ID,
                     survey_data=json.dumps({
-                        'home_type': 'house',
-                        'occupants': 4,
-                        'bedrooms': 3,
-                        'heating_type': 'electric',
-                        'appliances': ['washer', 'dryer', 'dishwasher', 'oven'],
-                        'has_tou': 'yes',
-                        'daily_budget_kwh': 30,
-                        'electricity_rate_cents': 30,
-                        'goal': 'save_money',
+                        'appliance_type': 'heater',
+                        'power_rating': '2400',
+                        'appliance_model': 'Dyson Hot+Cool HP07',
+                        'knows_plan': 'yes',
+                        'plan_type': 'single',
+                        'single_usage_charge': '27.5',
+                        'intentions': ['reduce_bill', 'monitor'],
                     }),
                 )
                 session_db.add(profile)
+            else:
+                profile.survey_data = json.dumps({
+                    'appliance_type': 'heater',
+                    'power_rating': '2400',
+                    'appliance_model': 'Dyson Hot+Cool HP07',
+                    'knows_plan': 'yes',
+                    'plan_type': 'single',
+                    'single_usage_charge': '27.5',
+                    'intentions': ['reduce_bill', 'monitor'],
+                })
             session_db.commit()
 
         return jsonify({'user': user.to_dict()})

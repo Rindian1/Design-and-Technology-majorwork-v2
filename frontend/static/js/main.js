@@ -16,7 +16,7 @@ class EnergyDashboard {
   }
 
   async initialize() {
-    const authPages = ['/login', '/register'];
+    const authPages = ['/login', '/register', '/survey'];
     if (authPages.includes(window.location.pathname)) {
       return;
     }

@@ -20,16 +20,48 @@ TIPS_POOL = [
 
 
 def _load_user_profile(session, user_id):
-    """Load survey_data from UserProfile and return parsed dict or defaults."""
     profile = session.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     if profile and profile.survey_data:
         data = json.loads(profile.survey_data)
-        budget = data.get('daily_budget_kwh', 30)
-        rate = data.get('electricity_rate_cents', 30) / 100
-        appliances = data.get('appliances', [])
-        has_tou = data.get('has_tou', 'no')
-        return {'budget_kwh': budget, 'rate_per_kwh': rate, 'appliances': appliances, 'has_tou': has_tou}
-    return {'budget_kwh': 30, 'rate_per_kwh': ELECTRICITY_RATE_CENTS_PER_KWH / 100, 'appliances': [], 'has_tou': 'no'}
+        appliance_type = data.get('appliance_type', 'general')
+        power_rating = data.get('power_rating')
+        appliance_model = data.get('appliance_model')
+
+        knows_plan = data.get('knows_plan', 'no')
+        if knows_plan == 'no':
+            rate_cents = float(data.get('static_rate_cents') or 27)
+        elif data.get('plan_type') == 'single':
+            rate_cents = float(data.get('single_usage_charge', 27))
+        else:
+            rate_cents = float(data.get('peak_charge', 27))
+
+        intentions = data.get('intentions', ['monitor'])
+        is_tou = knows_plan == 'yes' and data.get('plan_type') == 'tou'
+
+        return {
+            'appliance_type': appliance_type,
+            'power_rating': power_rating,
+            'appliance_model': appliance_model,
+            'rate_per_kwh': rate_cents / 100,
+            'budget_kwh': 30,
+            'intentions': intentions,
+            'has_tou': is_tou,
+            'peak_hours': data.get('peak_hours', []),
+            'offpeak_hours': data.get('offpeak_hours', []),
+            'shoulder_hours': data.get('shoulder_hours', []),
+        }
+    return {
+        'appliance_type': 'general',
+        'power_rating': None,
+        'appliance_model': None,
+        'rate_per_kwh': ELECTRICITY_RATE_CENTS_PER_KWH / 100,
+        'budget_kwh': 30,
+        'intentions': ['monitor'],
+        'has_tou': False,
+        'peak_hours': [],
+        'offpeak_hours': [],
+        'shoulder_hours': [],
+    }
 
 
 class EnergyDataManager:

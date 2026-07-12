@@ -36,6 +36,10 @@ def register_routes(app):
     def register_page():
         return render_template('register.html')
 
+    @app.route('/survey')
+    def survey_page():
+        return render_template('survey.html')
+
     @app.route('/api/profile')
     @login_required
     def get_profile():

@@ -5,7 +5,7 @@
 <div class="auth-page">
   <div class="auth-card">
     <h1 class="auth-title">Create Account</h1>
-    <p class="auth-subtitle">Tell us about your home to get personalised recommendations.</p>
+    <p class="auth-subtitle">Enter your details to get started.</p>
 
     <form id="register-form" class="auth-form">
       <div class="form-group">
@@ -16,9 +16,7 @@
         <label for="reg-password">Password</label>
         <input type="password" id="reg-password" class="form-input" placeholder="At least 4 characters" required minlength="4" autocomplete="new-password">
       </div>
-
-      <div id="survey-container"></div>
-
+      <button type="submit" class="btn btn-primary btn-full" id="register-btn">Create Account</button>
       <p class="form-error" id="register-error"></p>
     </form>
 
@@ -30,9 +28,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('register-form');
   const errorEl = document.getElementById('register-error');
 
-  authManager.renderSurveyForm('survey-container', async (answers) => {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
     errorEl.textContent = '';
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
@@ -43,8 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      await authManager.register(email, password, answers);
-      window.location.href = '/';
+      await authManager.register(email, password);
+      window.location.href = '/survey';
     } catch (err) {
       errorEl.textContent = err.message;
     }

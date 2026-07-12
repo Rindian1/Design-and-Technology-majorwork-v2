@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Home Survey — Energy Monitor{% endblock %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="auth-card auth-card--wide">
+    <h1 class="auth-title">Home Energy Survey</h1>
+    <p class="auth-subtitle">Tell us about your home to get personalised recommendations.</p>
+
+    <div id="survey-container"></div>
+
+    <p class="form-error" id="survey-error"></p>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const errorEl = document.getElementById('survey-error');
+
+  const session = await authManager.checkSession();
+  if (!session) {
+    window.location.href = '/login';
+    return;
+  }
+
+  authManager.renderSurveyForm('survey-container', {
+    onSubmit: async (answers) => {
+      errorEl.textContent = '';
+      try {
+        await energyAPI.submitSurvey(answers);
+        window.location.href = '/';
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    },
+    submitText: 'Save & Continue',
+  });
+});
+</script>
+{% endblock %}
