@@ -66,6 +66,13 @@
 
   {# ── Recommendations Tab ── #}
   <div id="recommendations-panel" class="tab-panel" role="tabpanel" hidden>
+    <div class="recs-header">
+      <select id="recs-category" class="recs-dropdown">
+        <option value="general">General Insights</option>
+        <option value="behaviour">Behaviour-Specific</option>
+        <option value="appliance">Appliance-Specific</option>
+      </select>
+    </div>
     <div id="recs-container"></div>
   </div>
 

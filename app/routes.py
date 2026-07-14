@@ -4,6 +4,7 @@ from flask import render_template, jsonify, session
 from datetime import datetime
 
 from app.data_manager import EnergyDataManager, GraphDataProcessor, RecommendationEngine
+from app.llm_client import get_appliance_recommendation
 
 data_manager = EnergyDataManager()
 rec_engine = RecommendationEngine()
@@ -78,6 +79,44 @@ def register_routes(app):
             return jsonify({'error': 'No date range available'}), 404
         return jsonify(date_range)
 
+    @app.route('/api/recommendations/general/<date>')
+    @login_required
+    def get_recommendations_general(date):
+        user_id = get_user_id()
+        if not data_manager.validate_date_range(date, user_id=user_id):
+            return jsonify({'error': 'Date out of range'}), 400
+        profile = data_manager.get_user_profile(user_id)
+        recs = rec_engine.get_general_insights(date, user_id=user_id)
+        return jsonify({
+            'date': date,
+            'budget_kwh': profile['budget_kwh'],
+            'rate_per_kwh': profile['rate_per_kwh'],
+            'recommendations': recs
+        })
+
+    @app.route('/api/recommendations/behaviour/<date>')
+    @login_required
+    def get_recommendations_behaviour(date):
+        user_id = get_user_id()
+        if not data_manager.validate_date_range(date, user_id=user_id):
+            return jsonify({'error': 'Date out of range'}), 400
+        recs = rec_engine.get_behaviour_recs(date, user_id=user_id)
+        return jsonify({
+            'date': date,
+            'recommendations': recs
+        })
+
+    @app.route('/api/recommendations/appliance/<date>')
+    @login_required
+    def get_recommendations_appliance(date):
+        user_id = get_user_id()
+        if not data_manager.validate_date_range(date, user_id=user_id):
+            return jsonify({'error': 'Date out of range'}), 400
+        profile = data_manager.get_user_profile(user_id)
+        usage = data_manager.fetch_daily_data(date, user_id=user_id)
+        result = get_appliance_recommendation(profile, usage, date)
+        return jsonify(result)
+
     @app.route('/api/recommendations/<date>')
     @login_required
     def get_recommendations(date):
@@ -85,7 +124,7 @@ def register_routes(app):
         if not data_manager.validate_date_range(date, user_id=user_id):
             return jsonify({'error': 'Date out of range'}), 400
         profile = data_manager.get_user_profile(user_id)
-        recs = rec_engine.get_recommendations(date, user_id=user_id)
+        recs = rec_engine.get_general_insights(date, user_id=user_id)
         return jsonify({
             'date': date,
             'budget_kwh': profile['budget_kwh'],
