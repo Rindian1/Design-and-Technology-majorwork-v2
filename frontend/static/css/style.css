@@ -287,6 +287,63 @@ body {
 .recs-state .loading-spinner { margin: 0 auto 12px; }
 .recs-error .recs-state-text { color: #ff5252; }
 
+.recs-header {
+  margin-bottom: 16px;
+}
+.recs-dropdown {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: #eee;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: auto;
+  -webkit-appearance: auto;
+}
+.recs-dropdown option {
+  background: #1a1a2e;
+  color: #eee;
+}
+
+.recs-appliance {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.appliance-specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+}
+.spec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 8px;
+}
+.spec-item.highlight {
+  background: rgba(0, 230, 118, 0.08);
+}
+.spec-label {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.spec-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #eee;
+}
+
 /* ── Tab Panels ── */
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }

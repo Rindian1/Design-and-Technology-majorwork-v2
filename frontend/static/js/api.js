@@ -60,6 +60,18 @@ class EnergyAPI {
         return this.request(`/api/recommendations/${date}`);
     }
 
+    async getGeneralInsights(date) {
+        return this.request(`/api/recommendations/general/${date}`);
+    }
+
+    async getBehaviourRecs(date) {
+        return this.request(`/api/recommendations/behaviour/${date}`);
+    }
+
+    async getApplianceRecs(date) {
+        return this.request(`/api/recommendations/appliance/${date}`);
+    }
+
     async getProfile() {
         return this.request('/api/profile');
     }

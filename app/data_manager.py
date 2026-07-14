@@ -49,6 +49,9 @@ def _load_user_profile(session, user_id):
             'peak_hours': data.get('peak_hours', []),
             'offpeak_hours': data.get('offpeak_hours', []),
             'shoulder_hours': data.get('shoulder_hours', []),
+            'peak_charge': float(data.get('peak_charge', 0)) if is_tou else None,
+            'offpeak_charge': float(data.get('offpeak_charge', 0)) if is_tou else None,
+            'shoulder_charge': float(data.get('shoulder_charge', 0)) if is_tou else None,
         }
     return {
         'appliance_type': 'general',
@@ -61,6 +64,9 @@ def _load_user_profile(session, user_id):
         'peak_hours': [],
         'offpeak_hours': [],
         'shoulder_hours': [],
+        'peak_charge': None,
+        'offpeak_charge': None,
+        'shoulder_charge': None,
     }
 
 
@@ -167,7 +173,7 @@ class RecommendationEngine:
     def __init__(self, db_path: str = HEATING_DB_PATH):
         self.db = DatabaseSession(db_path)
 
-    def get_recommendations(self, date_str: str, user_id: int = 1):
+    def get_general_insights(self, date_str: str, user_id: int = 1):
         session = self.db.get_session()
         try:
             profile = _load_user_profile(session, user_id)
@@ -430,6 +436,143 @@ class RecommendationEngine:
                 'title': 'Energy saving tip',
                 'description': TIPS_POOL[tip_index]
             })
+
+            return recs
+        finally:
+            session.close()
+
+    def get_behaviour_recs(self, date_str: str, user_id: int = 1):
+        session = self.db.get_session()
+        try:
+            profile = _load_user_profile(session, user_id)
+            rate_per_kwh = profile['rate_per_kwh']
+            has_tou = profile['has_tou']
+
+            parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
+            today_stats = HeatingUsage.get_statistics(session, parsed, user_id=user_id)
+            if not today_stats or today_stats.count == 0:
+                return []
+
+            today_total_kwh = (today_stats.total or 0) / 1000
+            today_records = HeatingUsage.get_by_date(session, parsed, user_id=user_id)
+            recs = []
+
+            def hour_in_period(h, periods):
+                for p in periods:
+                    start = int(p['start'])
+                    end = int(p['end'])
+                    if start <= end:
+                        if start <= h < end:
+                            return True
+                    else:
+                        if h >= start or h < end:
+                            return True
+                return False
+
+            if has_tou and today_records:
+                peak_charge = profile['peak_charge'] or 0
+                offpeak_charge = profile['offpeak_charge'] or 0
+                shoulder_charge = profile['shoulder_charge'] or 0
+                peak_hours = profile['peak_hours']
+                offpeak_hours = profile['offpeak_hours']
+                shoulder_hours = profile['shoulder_hours']
+
+                peak_kwh = 0
+                offpeak_kwh = 0
+                shoulder_kwh = 0
+
+                for r in today_records:
+                    h = r.timestamp.hour
+                    kwh = r.watt_usage / 1000
+                    if hour_in_period(h, peak_hours):
+                        peak_kwh += kwh
+                    elif hour_in_period(h, shoulder_hours):
+                        shoulder_kwh += kwh
+                    else:
+                        offpeak_kwh += kwh
+
+                peak_cost = peak_kwh * peak_charge / 100
+                offpeak_cost = offpeak_kwh * offpeak_charge / 100
+                shoulder_cost = shoulder_kwh * shoulder_charge / 100
+                total_cost = peak_cost + offpeak_cost + shoulder_cost
+
+                if peak_kwh > 0:
+                    daily_saving = peak_kwh * (peak_charge - offpeak_charge) / 100
+                    yearly_saving = daily_saving * 365
+                    recs.append({
+                        'type': 'behaviour', 'icon': '\u26a1',
+                        'severity': 'warning' if peak_kwh > 2 else 'info',
+                        'title': f'Shift peak usage to save',
+                        'description': (
+                            f"You used {peak_kwh:.1f} kWh during peak hours, costing "
+                            f"${peak_cost:.2f}. Shifting this to off-peak could save "
+                            f"${daily_saving:.2f}/day (${yearly_saving:.0f}/year)."
+                        )
+                    })
+                    if peak_cost > total_cost * 0.5:
+                        recs.append({
+                            'type': 'behaviour', 'icon': '\U0001f4a1',
+                            'severity': 'warning',
+                            'title': 'Majority of cost in peak',
+                            'description': (
+                                f"Peak hour usage makes up {peak_cost/total_cost*100:.0f}% of "
+                                f"today's electricity cost. Consider scheduling high-power "
+                                f"appliances to run during off-peak hours."
+                            )
+                        })
+            elif today_records:
+                peak_record = max(today_records, key=lambda r: r.watt_usage)
+                peak_hour = peak_record.timestamp.hour
+                peak_kw = peak_record.watt_usage / 1000
+                periods = []
+                if 6 <= peak_hour < 12:
+                    periods.append('morning')
+                elif 12 <= peak_hour < 18:
+                    periods.append('afternoon')
+                elif 18 <= peak_hour < 23:
+                    periods.append('evening')
+                else:
+                    periods.append('overnight')
+
+                recs.append({
+                    'type': 'behaviour', 'icon': '\u23f0',
+                    'severity': 'info',
+                    'title': f'Highest usage in the {periods[0]}',
+                    'description': (
+                        f"Your peak usage of {peak_kw:.2f} kW at "
+                        f"{peak_hour % 12 if peak_hour % 12 != 0 else 12}:00 "
+                        f"{'PM' if peak_hour >= 12 else 'AM'} is during {periods[0]} hours."
+                    )
+                })
+
+            if today_total_kwh > 0:
+                avg_over_24 = today_total_kwh / 24
+                high_hours = [r for r in (today_records or [])
+                              if r.watt_usage / 1000 > avg_over_24 * 1.5]
+                if len(high_hours) > 4:
+                    high_total = sum(r.watt_usage for r in high_hours) / 1000
+                    high_cost = high_total * rate_per_kwh
+                    recs.append({
+                        'type': 'behaviour', 'icon': '\U0001f4ca',
+                        'severity': 'info',
+                        'title': f'{len(high_hours)} hours above average',
+                        'description': (
+                            f"You had {len(high_hours)} hours where usage was 50%+ above "
+                            f"your daily average. Those hours totaled {high_total:.1f} kWh "
+                            f"(${high_cost:.2f}). Identifying what runs then could reduce costs."
+                        )
+                    })
+
+            if not recs:
+                recs.append({
+                    'type': 'behaviour', 'icon': '\U0001f4a1',
+                    'severity': 'info',
+                    'title': 'Steady usage pattern',
+                    'description': (
+                        "Your energy usage is relatively consistent throughout the day. "
+                        "Consider if any appliances could be scheduled more efficiently."
+                    )
+                })
 
             return recs
         finally:
