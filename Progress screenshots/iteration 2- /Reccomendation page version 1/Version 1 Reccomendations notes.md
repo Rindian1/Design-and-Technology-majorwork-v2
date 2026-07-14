@@ -16,5 +16,5 @@ Improvements:
 2) Making the reccomendations more actionable and specific 
     The reccomendations should be more specific and actionable. For example, instead of just saying "You could save $X per year by reducing the temperature of the heater by 3 degrees", it should say "You could save $X per year by reducing the temperature of the heater by 3 degrees, by setting it to 18 degrees instead of 21 degrees" 
 
-Another thing that should be implemented in the future is the ability to untereact with the TAPO plug. In the future, their should be a control to remotely turn off the plug at specific times. 
+Another thing that should be implemented in the future is the ability to untereact with the TAPO plug. In the future, their should be a control to remotely turn off the plug at specific times.
             
