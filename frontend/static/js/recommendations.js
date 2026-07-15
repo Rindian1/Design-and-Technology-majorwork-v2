@@ -31,8 +31,8 @@ class RecommendationsManager {
 
         try {
             const data = await energyAPI.getApplianceRecs(date);
-            if (data && data.recommendation) {
-                this._renderApplianceRecs([data.recommendation]);
+            if (data && data.recommendations && data.recommendations.length > 0) {
+                this._renderApplianceRecs(data.recommendations);
                 return;
             }
             if (data && data.error) {
