@@ -6,6 +6,7 @@
   <meta name="description" content="Energy Monitoring Dashboard">
   <title>{% block title %}Energy Monitor{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -17,10 +18,11 @@
         <button id="next-day" class="nav-arrow">&#8594;</button>
       </div>
       <div class="header-right">
-        <div class="header-tabs">
-          <button class="tab-btn active" data-tab="graph">Graph</button>
-          <button class="tab-btn" data-tab="recommendations">Recs</button>
-        </div>
+          <div class="header-tabs">
+            <button class="tab-btn active" data-tab="graph">Graph</button>
+            <button class="tab-btn" data-tab="general">General Insights</button>
+            <button class="tab-btn" data-tab="appliance">Appliance Specific</button>
+          </div>
         <div class="user-menu" id="user-menu" style="display:none">
           <button class="user-menu-btn" id="user-menu-btn">
             <span id="user-email-display"></span>

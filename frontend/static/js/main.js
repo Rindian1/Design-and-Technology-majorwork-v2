@@ -103,25 +103,28 @@ class EnergyDashboard {
     window.addEventListener('dateChanged', (e) => {
       const { date } = e.detail;
       gaugeManager.loadDataForDate(date);
-      if (navigation.getCurrentTab() === 'recommendations') {
-        recsManager.loadRecommendations(date);
-      }
+      this._loadTabContent(date);
     });
     window.addEventListener('tabChanged', (e) => {
-      if (e.detail.tab === 'recommendations') {
-        const date = navigation.getCurrentDate();
-        recsManager.loadRecommendations(date);
-      }
+      const date = navigation.getCurrentDate();
+      this._loadTabContent(date, e.detail.tab);
     });
+  }
+
+  _loadTabContent(date, tab) {
+    const activeTab = tab || navigation.getCurrentTab();
+    if (activeTab === 'general') {
+      recsManager.loadGeneralInsights(date);
+    } else if (activeTab === 'appliance') {
+      recsManager.loadApplianceRecs(date);
+    }
   }
 
   async loadInitialData() {
     try {
       const date = navigation.getCurrentDate();
       gaugeManager.loadDataForDate(date);
-      if (navigation.getCurrentTab() === 'recommendations') {
-        recsManager.loadRecommendations(date);
-      }
+      this._loadTabContent(date);
     } catch (err) {
       console.error('Failed to load initial data:', err);
     }
