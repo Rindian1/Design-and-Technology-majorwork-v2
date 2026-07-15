@@ -441,6 +441,142 @@ class RecommendationEngine:
         finally:
             session.close()
 
+    def get_general_detailed(self, date_str: str, user_id: int = 1):
+        session = self.db.get_session()
+        try:
+            profile = _load_user_profile(session, user_id)
+            rate = profile['rate_per_kwh']
+            budget_kwh = profile['budget_kwh']
+
+            parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+            today_stats = HeatingUsage.get_statistics(session, parsed, user_id=user_id)
+            today_kwh = (today_stats.total or 0) / 1000 if today_stats and today_stats.count > 0 else 0
+            today_records = HeatingUsage.get_by_date(session, parsed, user_id=user_id) if today_stats and today_stats.count > 0 else []
+
+            # 1. Weekly spending (last 7 days)
+            weekly_spending = []
+            total_7day_kwh = 0
+            for i in range(6, -1, -1):
+                d = parsed - timedelta(days=i)
+                s = HeatingUsage.get_statistics(session, d, user_id=user_id)
+                kwh = (s.total or 0) / 1000 if s and s.count > 0 else 0
+                cost = kwh * rate
+                weekly_spending.append({
+                    'date': d.isoformat(),
+                    'total_kwh': round(kwh, 2),
+                    'cost': round(cost, 2),
+                })
+                total_7day_kwh += kwh
+
+            # 2. Today vs last week
+            today_vs_last_week = None
+            last_week = parsed - timedelta(days=7)
+            lw_stats = HeatingUsage.get_statistics(session, last_week, user_id=user_id)
+            lw_kwh = (lw_stats.total or 0) / 1000 if lw_stats and lw_stats.count > 0 else 0
+            if today_kwh > 0 and lw_kwh > 0:
+                diff_pct = ((today_kwh - lw_kwh) / lw_kwh) * 100
+                diff_kwh = today_kwh - lw_kwh
+                today_vs_last_week = {
+                    'diff_pct': round(diff_pct, 1),
+                    'baseline_kwh': round(lw_kwh, 2),
+                    'diff_kwh': round(diff_kwh, 2),
+                    'savings': round(abs(diff_kwh) * rate, 2),
+                    'is_positive': diff_pct < 0,
+                }
+
+            # 3. Today vs 7-day rolling average
+            today_vs_average = None
+            historical = []
+            for i in range(1, 8):
+                d = parsed - timedelta(days=i)
+                s = HeatingUsage.get_statistics(session, d, user_id=user_id)
+                if s and s.count > 0:
+                    historical.append((s.total or 0) / 1000)
+            if historical:
+                avg_kwh = sum(historical) / len(historical)
+                if avg_kwh > 0:
+                    diff_pct = ((today_kwh - avg_kwh) / avg_kwh) * 100
+                    today_vs_average = {
+                        'diff_pct': round(diff_pct, 1),
+                        'avg_kwh': round(avg_kwh, 2),
+                        'is_positive': diff_pct < 0,
+                    }
+
+            # 4. Averages
+            avg_daily_cost = (total_7day_kwh / 7) * rate if total_7day_kwh > 0 else 0
+            avg_weekly_spend = round(avg_daily_cost * 7, 2)
+            forecasted_monthly = round(avg_daily_cost * 30, 2)
+
+            # 5. Savings scenarios
+            monthly_cost_est = (total_7day_kwh / 7) * 30 * rate
+            savings_scenarios = {
+                'pct_2': round(monthly_cost_est * 0.02, 2),
+                'pct_4': round(monthly_cost_est * 0.04, 2),
+                'pct_6': round(monthly_cost_est * 0.06, 2),
+            }
+
+            # 6. Behaviour tips
+            behaviour_tips = self.get_behaviour_recs(date_str, user_id=user_id)
+
+            # 7. Tip banner
+            tip_banner = self._generate_tip_banner(today_records, today_kwh, rate, profile)
+
+            return {
+                'date': date_str,
+                'weekly_spending': weekly_spending,
+                'today_vs_last_week': today_vs_last_week,
+                'today_vs_average': today_vs_average,
+                'avg_weekly_spend': avg_weekly_spend,
+                'forecasted_monthly': forecasted_monthly,
+                'savings_scenarios': savings_scenarios,
+                'behaviour_tips': behaviour_tips,
+                'tip_banner': tip_banner,
+                'budget_kwh': budget_kwh,
+                'rate_per_kwh': rate,
+            }
+        finally:
+            session.close()
+
+    def _generate_tip_banner(self, records, today_kwh, rate, profile):
+        if not records:
+            return 'No usage data available for today.'
+
+        peak_record = max(records, key=lambda r: r.watt_usage)
+        peak_hour = peak_record.timestamp.hour
+        peak_kw = peak_record.watt_usage / 1000
+
+        has_tou = profile.get('has_tou', False)
+        if has_tou:
+            peak_hours = profile.get('peak_hours', [])
+            peak_ranges = ', '.join(f"{p['start']}:00-{p['end']}:00" for p in peak_hours)
+            for p in peak_hours:
+                start = int(p['start'])
+                end = int(p['end'])
+                in_peak = (start <= peak_hour < end) if start <= end else (peak_hour >= start or peak_hour < end)
+                if in_peak:
+                    return (
+                        f"Using your appliance heavily during peak rate hours ({peak_ranges}) "
+                        f"costs more. Shifting usage to off-peak could reduce your spending by ~15%."
+                    )
+
+        period_map = [
+            (6, 12, 'morning', 'running high-power tasks later in the day'),
+            (12, 18, 'afternoon', 'you likely have solar offset during this time'),
+            (18, 23, 'evening', 'shifting high-energy activities to midday'),
+            (23, 6, 'overnight', 'checking for devices left on unnecessarily'),
+        ]
+        for start, end, period, action in period_map:
+            if (start <= peak_hour < end) if start <= end else (peak_hour >= start or peak_hour < end):
+                return (
+                    f"Your highest usage is in the {period} ({peak_kw:.1f} kW at "
+                    f"{peak_hour % 12 if peak_hour % 12 != 0 else 12}:00 "
+                    f"{'PM' if peak_hour >= 12 else 'AM'}). Better timing could "
+                    f"reduce your spending by ~12%."
+                )
+
+        return 'Monitoring your usage patterns is the first step to reducing energy costs.'
+
     def get_behaviour_recs(self, date_str: str, user_id: int = 1):
         session = self.db.get_session()
         try:

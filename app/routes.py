@@ -94,6 +94,15 @@ def register_routes(app):
             'recommendations': recs
         })
 
+    @app.route('/api/recommendations/general/<date>/detailed')
+    @login_required
+    def get_recommendations_general_detailed(date):
+        user_id = get_user_id()
+        if not data_manager.validate_date_range(date, user_id=user_id):
+            return jsonify({'error': 'Date out of range'}), 400
+        result = rec_engine.get_general_detailed(date, user_id=user_id)
+        return jsonify(result)
+
     @app.route('/api/recommendations/behaviour/<date>')
     @login_required
     def get_recommendations_behaviour(date):
