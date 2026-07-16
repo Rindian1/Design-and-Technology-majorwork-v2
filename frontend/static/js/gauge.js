@@ -75,7 +75,7 @@ class GaugeManager {
     const totalKwh = s.total / 1000;
     const peakKw = s.peak / 1000;
     const avgKw = s.average / 1000;
-    const cost = totalKwh * this.ratePerKwh;
+    const cost = s.cost !== undefined ? s.cost : totalKwh * this.ratePerKwh;
     const fillRatio = Math.min(totalKwh / this.budgetKwh, 1);
     const filled = Math.round(fillRatio * SEGMENTS);
 

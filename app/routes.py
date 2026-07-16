@@ -3,7 +3,7 @@ from functools import wraps
 from flask import render_template, jsonify, session
 from datetime import datetime
 
-from app.data_manager import EnergyDataManager, GraphDataProcessor, RecommendationEngine
+from app.data_manager import EnergyDataManager, GraphDataProcessor, RecommendationEngine, compute_daily_cost
 from app.llm_client import get_appliance_recommendation
 
 data_manager = EnergyDataManager()
@@ -68,6 +68,9 @@ def register_routes(app):
         stats = data_manager.calculate_statistics(date, user_id=user_id)
         if not stats:
             return jsonify({'error': 'No statistics found for this date'}), 404
+        profile = data_manager.get_user_profile(user_id)
+        hourly = data_manager.fetch_daily_data(date, user_id=user_id)
+        stats['cost'] = round(compute_daily_cost(hourly, profile), 2)
         return jsonify(stats)
 
     @app.route('/api/date-range')
