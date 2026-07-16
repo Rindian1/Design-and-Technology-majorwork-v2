@@ -168,23 +168,11 @@ def demo_login():
             session_db.add(user)
             session_db.flush()
 
-            profile = session_db.query(UserProfile).filter(UserProfile.user_id == DEMO_USER_ID).first()
-            if not profile:
-                profile = UserProfile(
-                    user_id=DEMO_USER_ID,
-                    survey_data=json.dumps({
-                        'appliance_type': 'heater',
-                        'power_rating': '2400',
-                        'appliance_model': 'Dyson Hot+Cool HP07',
-                        'knows_plan': 'yes',
-                        'plan_type': 'single',
-                        'single_usage_charge': '27.5',
-                        'intentions': ['reduce_bill', 'monitor'],
-                    }),
-                )
-                session_db.add(profile)
-            else:
-                profile.survey_data = json.dumps({
+        profile = session_db.query(UserProfile).filter(UserProfile.user_id == DEMO_USER_ID).first()
+        if not profile:
+            profile = UserProfile(
+                user_id=DEMO_USER_ID,
+                survey_data=json.dumps({
                     'appliance_type': 'heater',
                     'power_rating': '2400',
                     'appliance_model': 'Dyson Hot+Cool HP07',
@@ -192,8 +180,22 @@ def demo_login():
                     'plan_type': 'single',
                     'single_usage_charge': '27.5',
                     'intentions': ['reduce_bill', 'monitor'],
-                })
-            session_db.commit()
+                    'monthly_budget_dollars': '150',
+                }),
+            )
+            session_db.add(profile)
+        else:
+            profile.survey_data = json.dumps({
+                'appliance_type': 'heater',
+                'power_rating': '2400',
+                'appliance_model': 'Dyson Hot+Cool HP07',
+                'knows_plan': 'yes',
+                'plan_type': 'single',
+                'single_usage_charge': '27.5',
+                'intentions': ['reduce_bill', 'monitor'],
+                'monthly_budget_dollars': '150',
+            })
+        session_db.commit()
 
         return jsonify({'user': user.to_dict()})
     finally:

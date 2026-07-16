@@ -38,12 +38,19 @@ def _load_user_profile(session, user_id):
         intentions = data.get('intentions', ['monitor'])
         is_tou = knows_plan == 'yes' and data.get('plan_type') == 'tou'
 
+        monthly_budget_dollars = data.get('monthly_budget_dollars')
+        rate_per_kwh = rate_cents / 100
+        if monthly_budget_dollars and rate_per_kwh > 0:
+            budget_kwh = round(float(monthly_budget_dollars) / (rate_per_kwh * 30), 1)
+        else:
+            budget_kwh = 30
+
         return {
             'appliance_type': appliance_type,
             'power_rating': power_rating,
             'appliance_model': appliance_model,
-            'rate_per_kwh': rate_cents / 100,
-            'budget_kwh': 30,
+            'rate_per_kwh': rate_per_kwh,
+            'budget_kwh': budget_kwh,
             'intentions': intentions,
             'has_tou': is_tou,
             'peak_hours': data.get('peak_hours', []),
@@ -53,11 +60,12 @@ def _load_user_profile(session, user_id):
             'offpeak_charge': float(data.get('offpeak_charge', 0)) if is_tou else None,
             'shoulder_charge': float(data.get('shoulder_charge', 0)) if is_tou else None,
         }
+    default_rate = ELECTRICITY_RATE_CENTS_PER_KWH / 100
     return {
         'appliance_type': 'general',
         'power_rating': None,
         'appliance_model': None,
-        'rate_per_kwh': ELECTRICITY_RATE_CENTS_PER_KWH / 100,
+        'rate_per_kwh': default_rate,
         'budget_kwh': 30,
         'intentions': ['monitor'],
         'has_tou': False,

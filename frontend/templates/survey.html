@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  const existingData = session.survey_data || null;
+  const isEditing = !!existingData;
+
   authManager.renderSurveyForm('survey-container', {
     onSubmit: async (answers) => {
       errorEl.textContent = '';
@@ -33,7 +36,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         errorEl.textContent = err.message;
       }
     },
-    submitText: 'Save & Continue',
+    submitText: isEditing ? 'Save Changes' : 'Save & Continue',
+    initialAnswers: existingData,
+    showCancel: isEditing,
   });
 });
 </script>

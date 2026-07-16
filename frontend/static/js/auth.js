@@ -40,11 +40,26 @@ class AuthManager {
 
         const onSubmit = typeof opts === 'function' ? opts : (opts?.onSubmit || (() => {}));
         const submitText = opts?.submitText || 'Save';
+        const initialAnswers = opts?.initialAnswers || null;
+        const showCancel = opts?.showCancel || false;
 
         this.loadSurveyQuestions().then(questions => {
             const steps = [...new Set(questions.map(q => q.step))].sort();
             let currentStep = 0;
-            const answers = {};
+            const answers = initialAnswers ? JSON.parse(JSON.stringify(initialAnswers)) : {};
+
+            if (showCancel) {
+                const existingCancel = container.querySelector('.survey-cancel-bar');
+                if (!existingCancel) {
+                    const bar = document.createElement('div');
+                    bar.className = 'survey-cancel-bar';
+                    bar.innerHTML = '<button type="button" class="btn btn-secondary" id="survey-cancel">Cancel</button>';
+                    container.parentElement?.insertBefore(bar, container);
+                    document.getElementById('survey-cancel')?.addEventListener('click', () => {
+                        window.location.href = '/';
+                    });
+                }
+            }
 
             const render = () => {
                 const stepQs = questions.filter(q => q.step === steps[currentStep]);
@@ -402,13 +417,22 @@ class AuthManager {
             if (q.depends_on && !this._isVisible(container, q)) continue;
 
             if (q.type === 'timerange') {
-                const ranges = answers[q.id] || [];
-                if (ranges.length === 0 || ranges.some(r => r.start === '' || r.end === '' || r.start === undefined || r.end === undefined)) {
-                    return false;
-                }
-                if (ranges.some(r => Number(r.start) >= Number(r.end))) {
-                    return false;
-                }
+                const wrap = container.querySelector(`#tr-${q.id}`);
+                if (!wrap) continue;
+                const rows = wrap.querySelectorAll('.timerange-row');
+                if (rows.length === 0) return false;
+                let allFilled = true;
+                rows.forEach(row => {
+                    const idx = row.dataset.idx;
+                    const startEl = container.querySelector(`select[name="${q.id}_start_${idx}"]`);
+                    const endEl = container.querySelector(`select[name="${q.id}_end_${idx}"]`);
+                    if (!startEl || !endEl || startEl.value === '' || endEl.value === '') {
+                        allFilled = false;
+                    } else if (Number(startEl.value) === Number(endEl.value)) {
+                        allFilled = false;
+                    }
+                });
+                if (!allFilled) return false;
                 continue;
             }
             if (q.type === 'multiselect') {
