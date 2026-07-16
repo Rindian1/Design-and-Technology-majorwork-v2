@@ -11,6 +11,8 @@ Allready done:
 
 Current TODO: 
 
+MAJOR
+
 MAJOR: 
 1) General insights should be engineered to be more meaningful
 2) Realistic seed data should be created  
@@ -29,3 +31,4 @@ Once these fixes have been done, I will move onto Iteration 3.
 Iteration 3 TODO: 
 1) Make it so that the data incorporates multiple appliances, and implement this in the appliance reccomendations. 
 2) Implement TAPO functionality
+3) Solar panel functionality

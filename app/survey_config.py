@@ -173,4 +173,14 @@ SURVEY_QUESTIONS = [
         ],
         "required": True,
     },
+    {
+        "step": 3,
+        "id": "monthly_budget_dollars",
+        "type": "number",
+        "label": "What is your monthly budget for electricity? (AUD)",
+        "description": "This helps us track when you reach your budget limit and alert you.",
+        "placeholder": "e.g. 150",
+        "required": True,
+        "min": 0,
+    },
 ]

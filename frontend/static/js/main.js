@@ -65,6 +65,10 @@ class EnergyDashboard {
       });
     }
 
+    document.getElementById('edit-preferences-btn')?.addEventListener('click', () => {
+      window.location.href = '/survey';
+    });
+
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
       await authManager.logout();
       window.location.href = '/login';

@@ -734,6 +734,13 @@ body {
 .auth-footer a { color: #00e676; text-decoration: none; font-weight: 500; }
 .auth-footer a:hover { text-decoration: underline; }
 
+/* ── Survey Cancel Bar ── */
+.survey-cancel-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
 /* ── Survey / Step Indicator ── */
 .survey-steps { margin-top: 8px; }
 .step-indicator {
