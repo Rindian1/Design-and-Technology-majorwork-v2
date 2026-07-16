@@ -11,16 +11,21 @@ Allready done:
 
 Current TODO: 
 
-MAJOR
-
 MAJOR: 
 1) General insights should be engineered to be more meaningful
 2) Realistic seed data should be created  
 3) Make the home page analyse the survey input data and make calculations based on that
 4) Spread out the UI for general insights and appliance insights
+5) Add GOALS feature: 
+    -Here the app challenges the user to make certain changes to their energy usage, in small specific ways.  
+        -e.g. Shift your energy usage forward by one hour 
+        -  Reduce energy usage by 5% today  
+        - Keep up your X day streak of below 10% of your budget
+        -  e.t.c. 
+    The user can then choose specific goals to target. By the end of the day, or week, the user can then see if they achieved their goals, and if not see their progress. This allows for the app to reinforce positive habits. 
 
 MINOR:
-1) Make it so that users can view and edit survey through a profile page of sorts? 
+1) Make it so that users can view and edit survey through a profile page of sorts? *DONE*
 2) Small UI issues in the home page 
 3) Top bar is a little cramped, needs to be improved 
 4) Home Icon needs to be added, and a logo should be designed  

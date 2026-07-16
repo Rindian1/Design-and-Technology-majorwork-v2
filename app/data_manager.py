@@ -78,6 +78,46 @@ def _load_user_profile(session, user_id):
     }
 
 
+def _hour_in_range(hour: int, time_range: dict) -> bool:
+    start = time_range['start']
+    end = time_range['end']
+    if start < end:
+        return start <= hour < end
+    return hour >= start or hour < end
+
+
+def _get_tou_rate(hour: int, profile: dict) -> float:
+    for r in profile.get('peak_hours', []):
+        if _hour_in_range(hour, r):
+            return profile.get('peak_charge', 0) / 100
+    for r in profile.get('offpeak_hours', []):
+        if _hour_in_range(hour, r):
+            return profile.get('offpeak_charge', 0) / 100
+    for r in profile.get('shoulder_hours', []):
+        if _hour_in_range(hour, r):
+            charge = profile.get('shoulder_charge')
+            if charge is not None:
+                return charge / 100
+    fallback = profile.get('offpeak_charge') or profile.get('peak_charge') or 27
+    return float(fallback) / 100
+
+
+def compute_daily_cost(hourly_data: list, profile: dict) -> float:
+    total_cost = 0.0
+    if not hourly_data:
+        return 0.0
+    if not profile.get('has_tou'):
+        total_kwh = sum(entry['watt_usage'] for entry in hourly_data) / 1000
+        return total_kwh * profile.get('rate_per_kwh', 0.30)
+    for entry in hourly_data:
+        ts = entry['timestamp']
+        hour = int(ts.split(' ')[1].split(':')[0])
+        usage_kwh = entry['watt_usage'] / 1000
+        rate = _get_tou_rate(hour, profile)
+        total_cost += usage_kwh * rate
+    return total_cost
+
+
 class EnergyDataManager:
     def __init__(self, db_path: str = HEATING_DB_PATH):
         self.db = DatabaseSession(db_path)
