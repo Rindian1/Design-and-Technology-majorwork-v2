@@ -4,6 +4,13 @@
 
 <div class="tab-panels">
 
+  {# ── Date Selector ── #}
+  <div class="date-selector">
+    <button id="prev-day" class="nav-arrow" disabled>&#8592;</button>
+    <span id="current-date" class="current-date">Loading...</span>
+    <button id="next-day" class="nav-arrow">&#8594;</button>
+  </div>
+
   {# ── Graph Tab ── #}
   <div id="graph-panel" class="tab-panel active" role="tabpanel">
 
@@ -11,14 +18,13 @@
       <div class="gauge-wrapper">
         <svg id="energy-gauge" viewBox="0 0 340 210" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="gauge-centre">
-          <div class="gauge-label-top">Peak Today</div>
+          <div class="gauge-label-top" id="gauge-label-top">Current spending</div>
           <div class="gauge-value-row">
             <span class="gauge-value" id="gauge-value">--</span>
-            <span class="gauge-unit">kW</span>
           </div>
           <div class="gauge-divider"></div>
-          <div class="gauge-today-label">Today</div>
-          <div class="gauge-cost" id="gauge-cost">$--.--</div>
+          <div class="gauge-today-label" id="gauge-today-label">Energy usage</div>
+          <div class="gauge-cost" id="gauge-cost">-- kWh</div>
         </div>
       </div>
 

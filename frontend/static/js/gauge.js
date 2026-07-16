@@ -64,7 +64,7 @@ class GaugeManager {
     const s = this.currentStats;
     if (!s || !s.count) {
       this.drawSegments(0);
-      this.setCentre('--', '$--.--');
+      this.setCentre(0, 0);
       this.setBudgetBar(0);
       this.setAlert(null);
       this.setInsight('No data available for this date.');
@@ -80,7 +80,7 @@ class GaugeManager {
     const filled = Math.round(fillRatio * SEGMENTS);
 
     this.drawSegments(filled);
-    this.setCentre(peakKw.toFixed(2), `$${cost.toFixed(2)}`);
+    this.setCentre(cost, totalKwh);
     this.setBudgetBar(fillRatio);
     this.setAlert(fillRatio);
     this.setMiniStats(totalKwh, peakKw, avgKw, cost);
@@ -95,9 +95,9 @@ class GaugeManager {
     }
   }
 
-  setCentre(value, cost) {
-    document.getElementById('gauge-value').textContent = value;
-    document.getElementById('gauge-cost').textContent = cost;
+  setCentre(cost, totalKwh) {
+    document.getElementById('gauge-value').textContent = `$${cost.toFixed(2)}`;
+    document.getElementById('gauge-cost').textContent = `${totalKwh.toFixed(1)} kWh`;
   }
 
   setBudgetBar(ratio) {

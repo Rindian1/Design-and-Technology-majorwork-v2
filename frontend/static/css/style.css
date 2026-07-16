@@ -34,6 +34,11 @@ body {
   align-items: center;
   gap: 10px;
 }
+.header-logo {
+  font-size: 26px;
+  padding: 5px 12px;
+  margin-right: 16px;
+}
 .nav-arrow {
   width: 34px; height: 34px;
   border-radius: 50%;
@@ -72,8 +77,24 @@ body {
   color: #00e676;
 }
 
+/* ── Date Selector ── */
+.date-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 12px 0 8px;
+}
+.date-selector #current-date {
+  font-size: 16px;
+  font-weight: 600;
+  color: #eee;
+  min-width: 140px;
+  text-align: center;
+}
+
 /* ── Main ── */
-.main { padding: 20px 0 40px; }
+.main { padding: 12px 0 40px; }
 
 /* ── Gauge Card ── */
 .gauge-card {
@@ -101,11 +122,11 @@ body {
   pointer-events: none;
 }
 .gauge-label-top {
-  font-size: 10px;
+  font-size: 9px;
   color: #888;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 2px;
+  letter-spacing: 1.2px;
+  margin-bottom: 1px;
 }
 .gauge-value-row {
   display: flex;
@@ -114,9 +135,9 @@ body {
   gap: 3px;
 }
 .gauge-value {
-  font-size: 38px;
+  font-size: 28px;
   font-weight: 700;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
   color: #fff;
 }
 .gauge-unit {
@@ -138,9 +159,9 @@ body {
   letter-spacing: 1.5px;
 }
 .gauge-cost {
-  font-size: 28px;
-  font-weight: 700;
-  color: #00e676;
+  font-size: 18px;
+  font-weight: 600;
+  color: #aaa;
   margin-top: 1px;
 }
 
