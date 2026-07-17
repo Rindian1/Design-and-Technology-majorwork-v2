@@ -1,13 +1,14 @@
 from functools import wraps
 
-from flask import render_template, jsonify, session
+from flask import render_template, jsonify, session, request
 from datetime import datetime
 
-from app.data_manager import EnergyDataManager, GraphDataProcessor, RecommendationEngine, compute_daily_cost
+from app.data_manager import EnergyDataManager, GraphDataProcessor, RecommendationEngine, compute_daily_cost, GoalsEngine
 from app.llm_client import get_appliance_recommendation
 
 data_manager = EnergyDataManager()
 rec_engine = RecommendationEngine()
+goals_engine = GoalsEngine()
 
 
 def login_required(f):
@@ -143,6 +144,24 @@ def register_routes(app):
             'rate_per_kwh': profile['rate_per_kwh'],
             'recommendations': recs
         })
+
+    @app.route('/api/goals')
+    @login_required
+    def get_goals():
+        user_id = get_user_id()
+        date = request.args.get('date')
+        result = goals_engine.get_goals(user_id, target_date=date)
+        return jsonify(result)
+
+    @app.route('/api/goals/<goal_id>/toggle', methods=['POST'])
+    @login_required
+    def toggle_goal(goal_id):
+        user_id = get_user_id()
+        data = request.get_json(silent=True) or {}
+        result = goals_engine.toggle_goal(goal_id, user_id, target_date=data.get('date'))
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+        return jsonify(result)
 
     @app.route('/api/health')
     def health_check():

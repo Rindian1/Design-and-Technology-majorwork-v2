@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, Float, DateTime, Date, Text, String,
+    Column, Integer, Float, DateTime, Date, Text, String, Boolean,
     create_engine, UniqueConstraint, Index, ForeignKey
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
@@ -34,8 +34,44 @@ class UserProfile(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id'), unique=True, nullable=False)
     survey_data = Column(Text, nullable=True)  # JSON blob
+    points_total = Column(Integer, nullable=False, default=0)
 
     user = relationship('User', back_populates='profile')
+
+
+class UserGoal(Base):
+    __tablename__ = 'user_goals'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    goal_id = Column(String(64), nullable=False)
+    status = Column(String(16), nullable=False, default='inactive')
+    current_value = Column(Float, nullable=False, default=0)
+    target_value = Column(Float, nullable=False)
+    current_streak = Column(Integer, nullable=False, default=0)
+    streak_start_date = Column(Date, nullable=True)
+    timeframe_start = Column(Date, nullable=True)
+    completed = Column(Boolean, nullable=False, default=False)
+    last_checked_date = Column(Date, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+
+    user = relationship('User')
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'goal_id', name='uq_user_goal'),
+    )
+
+    def to_dict(self):
+        return {
+            'goal_id': self.goal_id,
+            'status': self.status,
+            'current_value': self.current_value,
+            'target_value': self.target_value,
+            'current_streak': self.current_streak,
+            'completed': self.completed,
+            'streak_start_date': self.streak_start_date.isoformat() if self.streak_start_date else None,
+            'timeframe_start': self.timeframe_start.isoformat() if self.timeframe_start else None,
+        }
 
 
 class HeatingUsage(Base):

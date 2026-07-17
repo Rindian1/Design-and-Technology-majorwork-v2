@@ -1,0 +1,42 @@
+[
+  {
+    "goal_id": "budget_streak",
+    "type": "streak",
+    "description_template": "Get a {target} day streak of being {threshold_pct}% below your budget",
+    "default_target": 5,
+    "default_threshold_pct": 10,
+    "timeframe_label": "{current}/{target} days",
+    "completion_reward": 200,
+    "stake_amount": 50
+  },
+  {
+    "goal_id": "peak_restriction",
+    "type": "linear_limit",
+    "description_template": "Stay under {target} hours of peak usage today",
+    "default_target": 2,
+    "default_threshold_pct": null,
+    "timeframe_label": "{current:.1f}/{target} hours",
+    "completion_reward": 150,
+    "stake_amount": 30
+  },
+  {
+    "goal_id": "weekly_reduction",
+    "type": "linear_limit",
+    "description_template": "Spend {threshold_pct}% less energy this week than your weekly budget",
+    "default_target": 100,
+    "default_threshold_pct": 10,
+    "timeframe_label": "{current:.0f}% / {target}%",
+    "completion_reward": 300,
+    "stake_amount": 75
+  },
+  {
+    "goal_id": "offpeak_shift",
+    "type": "streak",
+    "description_template": "Have {threshold_pct}% of energy usage outside peak hours for {target} days",
+    "default_target": 5,
+    "default_threshold_pct": 70,
+    "timeframe_label": "{current}/{target} days",
+    "completion_reward": 250,
+    "stake_amount": 60
+  }
+]

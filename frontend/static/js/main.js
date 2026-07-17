@@ -121,6 +121,8 @@ class EnergyDashboard {
       recsManager.loadGeneralInsights(date);
     } else if (activeTab === 'appliance') {
       recsManager.loadApplianceRecs(date);
+    } else if (activeTab === 'goals') {
+      goalsManager.loadGoals();
     }
   }
 
