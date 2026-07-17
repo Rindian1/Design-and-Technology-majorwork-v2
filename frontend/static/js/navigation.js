@@ -378,7 +378,7 @@ class NavigationManager {
         }
         
         const tabParam = params.get('tab');
-        if (tabParam && ['graph', 'general', 'appliance'].includes(tabParam)) {
+        if (tabParam && ['graph', 'general', 'appliance', 'goals'].includes(tabParam)) {
             this.currentTab = tabParam;
         }
     }

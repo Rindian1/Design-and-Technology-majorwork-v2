@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta, date
 from sqlalchemy import func
 
-from app.models import HeatingUsage, UserProfile, DatabaseSession
+from app.models import HeatingUsage, UserProfile, UserGoal, DatabaseSession
 from config import HEATING_DB_PATH, TWO_WEEK_DAYS, ELECTRICITY_RATE_CENTS_PER_KWH
 
 TIPS_POOL = [
@@ -59,6 +59,7 @@ def _load_user_profile(session, user_id):
             'peak_charge': float(data.get('peak_charge', 0)) if is_tou else None,
             'offpeak_charge': float(data.get('offpeak_charge', 0)) if is_tou else None,
             'shoulder_charge': float(data.get('shoulder_charge', 0)) if is_tou else None,
+            'points_total': profile.points_total or 0,
         }
     default_rate = ELECTRICITY_RATE_CENTS_PER_KWH / 100
     return {
@@ -75,6 +76,7 @@ def _load_user_profile(session, user_id):
         'peak_charge': None,
         'offpeak_charge': None,
         'shoulder_charge': None,
+        'points_total': 0,
     }
 
 
@@ -759,5 +761,254 @@ class RecommendationEngine:
                 })
 
             return recs
+        finally:
+            session.close()
+
+
+def _is_peak_hour(hour: int, profile: dict) -> bool:
+    for r in profile.get('peak_hours', []):
+        if _hour_in_range(hour, r):
+            return True
+    return False
+
+
+class GoalsEngine:
+    def __init__(self, db_path: str = HEATING_DB_PATH):
+        self.db = DatabaseSession(db_path)
+
+    def _load_config(self):
+        import os
+        cfg_path = os.path.join(os.path.dirname(__file__), 'goals_config.json')
+        with open(cfg_path) as f:
+            return json.load(f)
+
+    def _get_session(self):
+        return self.db.get_session()
+
+    def get_goals(self, user_id: int, target_date: str = None):
+        if target_date is None:
+            target_date = date.today().isoformat()
+        parsed_date = datetime.strptime(target_date, '%Y-%m-%d').date()
+
+        config = self._load_config()
+        session = self._get_session()
+        try:
+            for cfg in config:
+                existing = session.query(UserGoal).filter(
+                    UserGoal.user_id == user_id,
+                    UserGoal.goal_id == cfg['goal_id']
+                ).first()
+                if not existing:
+                    target = cfg['default_target']
+                    session.add(UserGoal(
+                        user_id=user_id,
+                        goal_id=cfg['goal_id'],
+                        status='inactive',
+                        target_value=float(target),
+                        current_value=0,
+                        created_at=datetime.now(),
+                    ))
+            session.commit()
+
+            profile = _load_user_profile(session, user_id)
+            goals = session.query(UserGoal).filter(
+                UserGoal.user_id == user_id
+            ).all()
+
+            result = []
+            for g in goals:
+                cfg = next((c for c in config if c['goal_id'] == g.goal_id), None)
+                if not cfg:
+                    continue
+
+                if g.status == 'active' and not g.completed:
+                    self._compute_progress(g, cfg, profile, parsed_date, session)
+                    session.commit()
+
+                desc = self._render_description(cfg, g, profile)
+                result.append({
+                    'goal_id': g.goal_id,
+                    'status': g.status,
+                    'type': cfg['type'],
+                    'description': desc,
+                    'current_value': g.current_value,
+                    'target_value': g.target_value,
+                    'current_streak': g.current_streak,
+                    'completed': g.completed,
+                    'timeframe_label': cfg['timeframe_label'].format(
+                        current=g.current_value,
+                        target=g.target_value,
+                    ),
+                    'completion_reward': cfg['completion_reward'],
+                    'stake_amount': cfg['stake_amount'],
+                })
+
+            profile_obj = session.query(UserProfile).filter(
+                UserProfile.user_id == user_id
+            ).first()
+            points_total = profile_obj.points_total if profile_obj else 0
+
+            return {'goals': result, 'points_total': points_total}
+        finally:
+            session.close()
+
+    def _compute_progress(self, goal, cfg, profile, today, session):
+        if cfg['type'] == 'streak':
+            self._compute_streak(goal, cfg, profile, today, session)
+        elif cfg['type'] == 'linear_limit':
+            self._compute_linear(goal, cfg, profile, today, session)
+
+    def _compute_streak(self, goal, cfg, profile, today, session):
+        start = goal.timeframe_start or today
+        check_from = goal.last_checked_date or start
+        if check_from > today:
+            return
+
+        profile_dict = profile if isinstance(profile, dict) else {}
+        budget_kwh = profile_dict.get('budget_kwh', 30)
+        threshold_pct = cfg.get('default_threshold_pct', 10)
+
+        current = start
+        while current <= today:
+            if goal.last_checked_date and current <= goal.last_checked_date:
+                current += timedelta(days=1)
+                continue
+
+            records = HeatingUsage.get_by_date(session, current, user_id=goal.user_id)
+            day_total_kwh = sum(r.watt_usage for r in records) / 1000 if records else 0
+
+            met = False
+            if cfg['goal_id'] == 'budget_streak':
+                limit = budget_kwh * (1 - threshold_pct / 100)
+                met = day_total_kwh < limit and day_total_kwh > 0
+            elif cfg['goal_id'] == 'offpeak_shift':
+                offpeak_ratio = self._get_offpeak_ratio(records, profile_dict)
+                met = offpeak_ratio >= threshold_pct / 100 and day_total_kwh > 0
+
+            if met:
+                goal.current_streak += 1
+                goal.current_value = float(goal.current_streak)
+            else:
+                goal.current_streak = 0
+                goal.current_value = 0.0
+                if day_total_kwh > 0:
+                    goal.streak_start_date = None
+
+            goal.last_checked_date = current
+            session.flush()
+            current += timedelta(days=1)
+
+        if int(goal.current_value) >= int(goal.target_value):
+            goal.completed = True
+            self._award_points(goal.user_id, cfg['completion_reward'], session)
+
+    def _get_offpeak_ratio(self, records, profile):
+        if not records:
+            return 0
+        total = 0
+        offpeak = 0
+        for r in records:
+            wh = r.watt_usage
+            hour = r.timestamp.hour
+            total += wh
+            if not _is_peak_hour(hour, profile):
+                offpeak += wh
+        return offpeak / total if total > 0 else 0
+
+    def _compute_linear(self, goal, cfg, profile, today, session):
+        profile_dict = profile if isinstance(profile, dict) else {}
+        budget_kwh = profile_dict.get('budget_kwh', 30)
+        threshold_pct = cfg.get('default_threshold_pct', 10)
+
+        if cfg['goal_id'] == 'peak_restriction':
+            records = HeatingUsage.get_by_date(session, today, user_id=goal.user_id)
+            peak_hours = 0
+            for r in records:
+                hour = r.timestamp.hour
+                if _is_peak_hour(hour, profile_dict) and r.watt_usage > 0:
+                    peak_hours += 1
+            goal.current_value = float(peak_hours)
+
+        elif cfg['goal_id'] == 'weekly_reduction':
+            monday = today - timedelta(days=today.weekday())
+            week_records = session.query(HeatingUsage).filter(
+                HeatingUsage.user_id == goal.user_id,
+                HeatingUsage.date >= monday,
+                HeatingUsage.date <= today,
+            ).all()
+            week_kwh = sum(r.watt_usage for r in week_records) / 1000
+            weekly_budget = budget_kwh * 7
+            if week_kwh > 0:
+                reduction_pct = max(0, (1 - week_kwh / weekly_budget) * 100)
+                goal.current_value = min(
+                    goal.target_value,
+                    reduction_pct / threshold_pct * goal.target_value
+                )
+            else:
+                goal.current_value = 0.0
+
+        if goal.current_value >= goal.target_value:
+            goal.completed = True
+            self._award_points(goal.user_id, cfg['completion_reward'], session)
+
+    def _award_points(self, user_id, points, session):
+        profile = session.query(UserProfile).filter(
+            UserProfile.user_id == user_id
+        ).first()
+        if profile:
+            profile.points_total = (profile.points_total or 0) + points
+
+    def _render_description(self, cfg, goal, profile):
+        pct = cfg.get('default_threshold_pct', 0) or 0
+        return cfg['description_template'].format(
+            target=int(goal.target_value),
+            threshold_pct=pct,
+            current=goal.current_value,
+        )
+
+    def toggle_goal(self, goal_id: str, user_id: int, target_date: str = None):
+        if target_date is None:
+            target_date = date.today().isoformat()
+        parsed_date = datetime.strptime(target_date, '%Y-%m-%d').date()
+
+        session = self._get_session()
+        try:
+            goal = session.query(UserGoal).filter(
+                UserGoal.user_id == user_id,
+                UserGoal.goal_id == goal_id
+            ).first()
+            if not goal:
+                return {'error': 'Goal not found'}, 404
+
+            if goal.status == 'inactive':
+                goal.status = 'active'
+                goal.current_value = 0
+                goal.current_streak = 0
+                goal.completed = False
+                goal.timeframe_start = parsed_date
+                goal.last_checked_date = None
+                goal.streak_start_date = parsed_date
+
+                cfg = self._load_config()
+                cfg_item = next((c for c in cfg if c['goal_id'] == goal_id), None)
+                if cfg_item:
+                    profile = session.query(UserProfile).filter(
+                        UserProfile.user_id == user_id
+                    ).first()
+                    if profile:
+                        profile.points_total = (profile.points_total or 0) - cfg_item['stake_amount']
+            else:
+                goal.status = 'inactive'
+                cfg = self._load_config()
+                cfg_item = next((c for c in cfg if c['goal_id'] == goal_id), None)
+                if cfg_item and not goal.completed:
+                    profile = session.query(UserProfile).filter(
+                        UserProfile.user_id == user_id
+                    ).first()
+                    if profile:
+                        profile.points_total = (profile.points_total or 0) + cfg_item['stake_amount']
+
+            session.commit()
+            return {'status': 'ok', 'goal_id': goal_id, 'new_status': goal.status}
         finally:
             session.close()
