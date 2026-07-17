@@ -6,8 +6,7 @@
     "default_target": 5,
     "default_threshold_pct": 10,
     "timeframe_label": "{current}/{target} days",
-    "completion_reward": 200,
-    "stake_amount": 50
+    "completion_reward": 200
   },
   {
     "goal_id": "peak_restriction",
@@ -16,8 +15,7 @@
     "default_target": 2,
     "default_threshold_pct": null,
     "timeframe_label": "{current:.1f}/{target} hours",
-    "completion_reward": 150,
-    "stake_amount": 30
+    "completion_reward": 150
   },
   {
     "goal_id": "weekly_reduction",
@@ -26,8 +24,7 @@
     "default_target": 100,
     "default_threshold_pct": 10,
     "timeframe_label": "{current:.0f}% / {target}%",
-    "completion_reward": 300,
-    "stake_amount": 75
+    "completion_reward": 300
   },
   {
     "goal_id": "offpeak_shift",
@@ -36,7 +33,6 @@
     "default_target": 5,
     "default_threshold_pct": 70,
     "timeframe_label": "{current}/{target} days",
-    "completion_reward": 250,
-    "stake_amount": 60
+    "completion_reward": 250
   }
 ]

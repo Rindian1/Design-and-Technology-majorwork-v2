@@ -840,7 +840,6 @@ class GoalsEngine:
                         target=g.target_value,
                     ),
                     'completion_reward': cfg['completion_reward'],
-                    'stake_amount': cfg['stake_amount'],
                 })
 
             profile_obj = session.query(UserProfile).filter(
@@ -988,25 +987,8 @@ class GoalsEngine:
                 goal.timeframe_start = parsed_date
                 goal.last_checked_date = None
                 goal.streak_start_date = parsed_date
-
-                cfg = self._load_config()
-                cfg_item = next((c for c in cfg if c['goal_id'] == goal_id), None)
-                if cfg_item:
-                    profile = session.query(UserProfile).filter(
-                        UserProfile.user_id == user_id
-                    ).first()
-                    if profile:
-                        profile.points_total = (profile.points_total or 0) - cfg_item['stake_amount']
             else:
                 goal.status = 'inactive'
-                cfg = self._load_config()
-                cfg_item = next((c for c in cfg if c['goal_id'] == goal_id), None)
-                if cfg_item and not goal.completed:
-                    profile = session.query(UserProfile).filter(
-                        UserProfile.user_id == user_id
-                    ).first()
-                    if profile:
-                        profile.points_total = (profile.points_total or 0) + cfg_item['stake_amount']
 
             session.commit()
             return {'status': 'ok', 'goal_id': goal_id, 'new_status': goal.status}

@@ -1,11 +1,17 @@
 class GoalsManager {
     constructor() {
         this._container = document.getElementById('goals-container');
+        this._prevPoints = null;
         this._setupDelegation();
     }
 
     _setupDelegation() {
         document.addEventListener('click', (e) => {
+            const badge = e.target.closest('#points-badge');
+            if (badge && typeof navigation !== 'undefined') {
+                navigation.switchTab('goals');
+                return;
+            }
             const btn = e.target.closest('.goal-toggle');
             if (!btn) return;
             const card = btn.closest('[data-goal-id]');
@@ -30,14 +36,16 @@ class GoalsManager {
     _render(data) {
         const goals = data.goals || [];
         const points = data.points_total || 0;
+        const prevPoints = this._prevPoints;
+        this._prevPoints = points;
 
         const headerHtml = `
-            <div class="goals-header">
+            <div class="goals-header ${prevPoints !== null && points > prevPoints ? 'points-flash' : ''}">
                 <span class="goals-header-icon">\u{1f3c6}</span>
                 <div>
                     <div class="goals-header-label">Your Points</div>
                 </div>
-                <span class="goals-header-points">${points}</span>
+                <span class="goals-header-points" id="goals-counter">${prevPoints !== null && points > prevPoints ? prevPoints : points}</span>
             </div>
         `;
 
@@ -54,6 +62,18 @@ class GoalsManager {
                 if (btn) btn.classList.add('active');
             }
         });
+
+        this._updatePointsBadge(points);
+
+        if (prevPoints !== null && points > prevPoints) {
+            this._animateCounter(prevPoints, points, 'goals-counter');
+            this._triggerConfetti();
+        }
+    }
+
+    _updatePointsBadge(points) {
+        const el = document.getElementById('points-badge-value');
+        if (el) el.textContent = points;
     }
 
     _renderCard(goal) {
@@ -76,15 +96,9 @@ class GoalsManager {
                     <div class="goal-description ${completedClass}">${this._escapeHtml(goal.description)}</div>
                     <div class="goal-progress">${progressHtml}</div>
                 </div>
-                <div class="goal-metrics">
-                    <div class="goal-metric-box reward">
-                        <div class="goal-metric-value">+${goal.completion_reward}</div>
-                        <div class="goal-metric-label">Reward</div>
-                    </div>
-                    <div class="goal-metric-box stake">
-                        <div class="goal-metric-value">\u2212${goal.stake_amount}</div>
-                        <div class="goal-metric-label">Stake</div>
-                    </div>
+                <div class="goal-metric-box reward">
+                    <div class="goal-metric-value">+${goal.completion_reward}</div>
+                    <div class="goal-metric-label">Reward</div>
                 </div>
             </div>
         `;
@@ -111,6 +125,51 @@ class GoalsManager {
             </div>
             <div style="font-size:10px;color:#888;margin-top:3px">${this._escapeHtml(goal.timeframe_label)}</div>
         `;
+    }
+
+    _animateCounter(from, to, elementId) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const duration = 600;
+        const start = performance.now();
+        const diff = to - from;
+
+        const tick = (now) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(from + diff * eased);
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                el.textContent = to;
+            }
+        };
+
+        requestAnimationFrame(tick);
+    }
+
+    _triggerConfetti() {
+        const frag = document.createDocumentFragment();
+        const colors = ['#00e676', '#ffab00', '#ff5252', '#448aff', '#e040fb', '#fff'];
+        for (let i = 0; i < 80; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = Math.random() * 100 + '%';
+            piece.style.top = '-10px';
+            piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.width = (Math.random() * 6 + 4) + 'px';
+            piece.style.height = (Math.random() * 6 + 4) + 'px';
+            piece.style.animationDuration = (Math.random() * 1.5 + 1) + 's';
+            piece.style.animationDelay = (Math.random() * 0.5) + 's';
+            piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+            frag.appendChild(piece);
+        }
+        const overlay = document.createElement('div');
+        overlay.className = 'confetti-overlay';
+        overlay.appendChild(frag);
+        document.body.appendChild(overlay);
+        setTimeout(() => overlay.remove(), 2500);
     }
 
     async toggleGoal(goalId) {
