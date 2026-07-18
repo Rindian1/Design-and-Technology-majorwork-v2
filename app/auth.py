@@ -177,24 +177,18 @@ def demo_login():
                     'power_rating': '2400',
                     'appliance_model': 'Dyson Hot+Cool HP07',
                     'knows_plan': 'yes',
-                    'plan_type': 'single',
-                    'single_usage_charge': '27.5',
+                    'plan_type': 'tou',
+                    'peak_charge': '30',
+                    'offpeak_charge': '15',
+                    'shoulder_charge': '20',
+                    'peak_hours': [{'start': 14, 'end': 20}],
+                    'offpeak_hours': [{'start': 0, 'end': 6}],
+                    'shoulder_hours': [{'start': 6, 'end': 14}, {'start': 20, 'end': 24}],
                     'intentions': ['reduce_bill', 'monitor'],
                     'monthly_budget_dollars': '150',
                 }),
             )
             session_db.add(profile)
-        else:
-            profile.survey_data = json.dumps({
-                'appliance_type': 'heater',
-                'power_rating': '2400',
-                'appliance_model': 'Dyson Hot+Cool HP07',
-                'knows_plan': 'yes',
-                'plan_type': 'single',
-                'single_usage_charge': '27.5',
-                'intentions': ['reduce_bill', 'monitor'],
-                'monthly_budget_dollars': '150',
-            })
         session_db.commit()
 
         return jsonify({'user': user.to_dict()})
