@@ -74,6 +74,19 @@ class UserGoal(Base):
         }
 
 
+class DailyDriver(Base):
+    __tablename__ = 'daily_drivers'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    date = Column(Date, nullable=False)
+    key_driver = Column(Text, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'date', name='uq_user_date_driver'),
+    )
+
+
 class HeatingUsage(Base):
     __tablename__ = 'heating_usage'
 
