@@ -107,6 +107,13 @@ def register_routes(app):
         result = rec_engine.get_general_detailed(date, user_id=user_id)
         return jsonify(result)
 
+    @app.route('/api/recommendations/general/trend')
+    @login_required
+    def get_recommendations_general_trend():
+        user_id = get_user_id()
+        result = rec_engine.get_all_time_trend(user_id=user_id)
+        return jsonify(result)
+
     @app.route('/api/recommendations/behaviour/<date>')
     @login_required
     def get_recommendations_behaviour(date):

@@ -1,5 +1,10 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+:focus-visible {
+  outline: 2px solid #00e676;
+  outline-offset: 2px;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   background: #0d0d1a;
@@ -40,14 +45,14 @@ body {
   margin-right: 16px;
 }
 .nav-arrow {
-  width: 34px; height: 34px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
   color: #888;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
   transition: all 0.2s;
 }
 .nav-arrow:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: #fff; }
@@ -60,17 +65,18 @@ body {
   display: flex; gap: 3px;
 }
 .tab-btn {
-  padding: 5px 10px;
+  padding: 8px 12px;
   border-radius: 8px;
-  font-size: 11px; font-weight: 500;
-  color: #666;
+  font-size: 12px; font-weight: 500;
+  color: #888;
   background: transparent;
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  min-height: 44px;
 }
-.tab-btn:hover { color: #aaa; }
+.tab-btn:hover { color: #ccc; }
 .tab-btn.active {
   background: rgba(0,230,118,0.1);
   border-color: rgba(0,230,118,0.2);
@@ -505,9 +511,9 @@ body {
   border-left: 3px solid #888;
 }
 .insight-module-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: #ddd;
+  color: #e0e0e0;
   margin-bottom: 8px;
   line-height: 1.4;
 }
@@ -518,9 +524,9 @@ body {
   margin-bottom: 6px;
 }
 .metric {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 6px;
   background: rgba(255,255,255,0.04);
 }
@@ -533,8 +539,8 @@ body {
   background: rgba(255,82,82,0.08);
 }
 .insight-baseline {
-  font-size: 11px;
-  color: #666;
+  font-size: 12px;
+  color: #999;
 }
 
 /* Section B: 2-Column Stats */
@@ -553,8 +559,8 @@ body {
   gap: 6px;
 }
 .gi-stat-label {
-  font-size: 11px;
-  color: #888;
+  font-size: 12px;
+  color: #999;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -597,10 +603,21 @@ body {
   color: #00e676;
 }
 .gi-scenario-label {
-  font-size: 10px;
-  color: #888;
+  font-size: 11px;
+  color: #999;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Section D: All-Time Trend Chart */
+.gi-section-d {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 16px;
+}
+.gi-section-d .chart-wrap {
+  height: 200px;
 }
 
 /* Behaviour Tips */
@@ -1025,6 +1042,7 @@ body {
   .mini-stat { padding: 10px 12px; }
   .mini-stat .val { font-size: 17px; }
   .auth-card { padding: 24px 18px; }
+  .header-tabs { overflow-x: auto; gap: 2px; padding-bottom: 4px; }
   .gi-section-a { grid-template-columns: 1fr; }
   .gi-section-b { grid-template-columns: 1fr; }
   .gi-scenarios { grid-template-columns: 1fr; }

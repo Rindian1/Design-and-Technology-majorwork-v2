@@ -588,6 +588,74 @@ class RecommendationEngine:
         finally:
             session.close()
 
+    def get_all_time_trend(self, user_id: int = 1):
+        session = self.db.get_session()
+        try:
+            profile = _load_user_profile(session, user_id)
+            rate = profile['rate_per_kwh']
+
+            date_range = HeatingUsage.get_date_range(session, user_id=user_id)
+            if not date_range or not date_range.earliest or not date_range.latest:
+                return {'buckets': [], 'total_days': 0, 'date_range': None}
+
+            earliest = date_range.earliest
+            latest = date_range.latest
+            total_days = (latest - earliest).days + 1
+
+            bucket_size = 2 if total_days <= 14 else 7
+
+            buckets = []
+            current = earliest
+            week_num = 1
+            while current <= latest:
+                bucket_end = current + timedelta(days=bucket_size - 1)
+                if bucket_end > latest:
+                    bucket_end = latest
+
+                bucket_days = []
+                d = current
+                while d <= bucket_end:
+                    s = HeatingUsage.get_statistics(session, d, user_id=user_id)
+                    kwh = (s.total or 0) / 1000 if s and s.count > 0 else 0
+                    cost = kwh * rate
+                    bucket_days.append({'date': d.isoformat(), 'kwh': kwh, 'cost': cost})
+                    d += timedelta(days=1)
+
+                avg_daily_cost = sum(day['cost'] for day in bucket_days) / len(bucket_days) if bucket_days else 0
+                total_kwh = sum(day['kwh'] for day in bucket_days)
+                total_cost = sum(day['cost'] for day in bucket_days)
+
+                if bucket_size >= 7:
+                    label = f"Wk {week_num}"
+                else:
+                    label = f"{current.strftime('%b %d')}-{bucket_end.strftime('%b %d')}"
+
+                buckets.append({
+                    'label': label,
+                    'avg_cost': round(avg_daily_cost, 2),
+                    'total_kwh': round(total_kwh, 2),
+                    'total_cost': round(total_cost, 2),
+                    'num_days': len(bucket_days),
+                    'start_date': current.isoformat(),
+                    'end_date': bucket_end.isoformat(),
+                })
+
+                current = bucket_end + timedelta(days=1)
+                week_num += 1
+
+            return {
+                'buckets': buckets,
+                'total_days': total_days,
+                'bucket_size': bucket_size,
+                'num_buckets': len(buckets),
+                'date_range': {
+                    'earliest': earliest.isoformat(),
+                    'latest': latest.isoformat(),
+                },
+            }
+        finally:
+            session.close()
+
     def _generate_tip_banner(self, records, today_kwh, rate, profile):
         if not records:
             return 'No usage data available for today.'
