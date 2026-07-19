@@ -14,7 +14,7 @@ body {
 }
 
 .container {
-  max-width: 900px;
+  max-width: 600px;
   margin: 0 auto;
   padding: 0 16px;
 }
@@ -89,7 +89,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  padding: 8px 0 4px;
+  padding: 12px 0 8px;
 }
 .date-selector #current-date {
   font-size: 16px;
@@ -100,13 +100,15 @@ body {
 }
 
 /* ── Main ── */
-.main { padding: 8px 0 16px; }
+.main { padding: 12px 0 40px; }
 
-/* ── Dial Section (matches demo) ── */
-.dial-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* ── Gauge Card ── */
+.gauge-card {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 24px;
+  padding: 16px 16px 20px;
   margin-bottom: 14px;
 }
 .gauge-wrapper {
@@ -116,9 +118,6 @@ body {
   margin: 0 auto;
 }
 .gauge-wrapper svg { display: block; width: 100%; height: auto; }
-.dial-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 16; }
-.dial-fill { fill: none; stroke: url(#dialGrad); stroke-width: 16; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 440; transition: stroke-dashoffset 0.6s; }
-
 .gauge-centre {
   position: absolute;
   bottom: 18px;
@@ -262,42 +261,19 @@ body {
 .insight-bar p { font-size: 13px; color: #bbb; line-height: 1.5; }
 .insight-bar strong { color: #00e676; font-weight: 600; }
 
-/* ── Chart Section (home page, below dial) ── */
-.chart-section {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 14px;
-}
-.chart-wrap {
-  position: relative;
-  width: 100%;
-  height: 120px;
-}
-.chart-wrap canvas {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-#home-legend { display: flex; gap: 20px; justify-content: center; margin-top: 6px; }
-.dl-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #999; }
-.dl-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-.dl-dot.peak { background: #ff5252; }
-.dl-dot.off { background: #00e676; }
-.dl-dot.shoulder { background: #ffab00; }
-
 /* ── Mini Stats ── */
 .mini-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 .mini-stat {
   background: rgba(255,255,255,0.03);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
 }
 .mini-stat .lbl { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
-.mini-stat .val { font-size: 18px; font-weight: 600; color: #fff; margin-top: 2px; }
+.mini-stat .val { font-size: 20px; font-weight: 600; color: #fff; margin-top: 2px; }
 .mini-stat .val small { font-size: 12px; font-weight: 400; color: #888; margin-left: 2px; }
 
 /* ── Recommendations Tab ── */
@@ -471,183 +447,227 @@ body {
 .general-insights {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
 }
 .gi-title {
   font-size: 22px;
   font-weight: 700;
   color: #fff;
 }
-
-/* Dial Section */
-.gi-dial-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2px 0 0;
-}
-.gi-dial-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 340px;
-  aspect-ratio: 340 / 200;
-  overflow: hidden;
-}
-.gi-dial-svg { width: 100%; height: 100%; display: block; }
-.gi-dial-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 16; }
-.gi-dial-fill {
-  fill: none; stroke: url(#giDialGrad); stroke-width: 16;
-  stroke-linecap: round;
-  stroke-dasharray: 440;
-  stroke-dashoffset: 95;
-  transition: stroke-dashoffset 0.6s;
-}
-.gi-dial-centre {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  width: 100%;
-  pointer-events: none;
-}
-.gi-dial-label-top {
-  font-size: 9px;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  margin-bottom: 1px;
-}
-.gi-dial-value-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 3px;
-}
-.gi-dial-value {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  color: #fff;
-}
-.gi-dial-divider {
-  width: 32px;
-  height: 2px;
-  background: rgba(255,255,255,0.1);
-  margin: 6px auto;
-  border-radius: 2px;
-}
-.gi-dial-today-label {
-  font-size: 10px;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-}
-.gi-dial-cost {
-  font-size: 18px;
+.gi-section-title {
+  font-size: 14px;
   font-weight: 600;
-  color: #aaa;
-  margin-top: 1px;
+  color: #ccc;
+  margin-bottom: 10px;
+}
+.section-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ccc;
+  margin-bottom: 10px;
 }
 
-/* Chart Section */
-.gi-chart-section {
-  display: flex;
-  flex-direction: column;
+/* Section A: Split View */
+.gi-section-a {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
 }
-.gi-chart-wrap {
+.gi-chart-col {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 16px;
+}
+.chart-wrap {
   position: relative;
   width: 100%;
-  height: 80px;
+  height: 200px;
 }
-.gi-chart-wrap canvas {
+.chart-wrap canvas {
   width: 100% !important;
   height: 100% !important;
 }
-
-/* Tariff Legend */
-.gi-legend {
+.gi-insights-col {
   display: flex;
-  gap: 20px;
-  justify-content: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 10px;
 }
-.gi-legend-item {
+
+/* Insight Modules */
+.insight-module {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 14px;
+}
+.insight-positive {
+  border-left: 3px solid #00e676;
+}
+.insight-negative {
+  border-left: 3px solid #ff5252;
+}
+.insight-neutral {
+  border-left: 3px solid #888;
+}
+.insight-module-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.insight-metrics {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+  margin-bottom: 6px;
+}
+.metric {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+}
+.metric-green {
+  color: #00e676;
+  background: rgba(0,230,118,0.08);
+}
+.metric-red {
+  color: #ff5252;
+  background: rgba(255,82,82,0.08);
+}
+.insight-baseline {
   font-size: 12px;
   color: #999;
 }
-.gi-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-.gi-dot.peak { background: #ff5252; }
-.gi-dot.shoulder { background: #ffab00; }
-.gi-dot.off { background: #00e676; }
 
-/* Mini Stats */
-.gi-mini-stats {
+/* Section B: 2-Column Stats */
+.gi-section-b {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
-.gi-mini-stat {
+.gi-stat-card {
   background: rgba(255,255,255,0.03);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.gi-mini-lbl {
-  font-size: 10px;
-  color: #666;
+.gi-stat-label {
+  font-size: 12px;
+  color: #999;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.gi-mini-val {
-  font-size: 20px;
-  font-weight: 600;
-  color: #fff;
-  margin-top: 2px;
-}
-.gi-mini-val small {
-  font-size: 12px;
-  font-weight: 400;
-  color: #888;
-  margin-left: 2px;
+.gi-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #00e676;
 }
 
-/* ── Responsive (narrow) ── */
+/* Section C: 3-Column Scenarios */
+.gi-section-c {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 16px;
+}
+.gi-scenarios {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+.gi-scenario-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gi-scenario-pct {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffab00;
+}
+.gi-scenario-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #00e676;
+}
+.gi-scenario-label {
+  font-size: 11px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Section D: All-Time Trend Chart */
+.gi-section-d {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 16px;
+}
+.gi-section-d .chart-wrap {
+  height: 200px;
+}
+
+/* Behaviour Tips */
+.behaviour-tips {
+  margin-top: 4px;
+}
+.tips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Tip Banner */
+.tip-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(0,230,118,0.04);
+  border: 1px solid rgba(0,230,118,0.08);
+  border-radius: 14px;
+  margin-top: 4px;
+}
+.tip-banner-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.tip-banner-text {
+  font-size: 13px;
+  color: #bbb;
+  line-height: 1.5;
+}
+.tip-banner-text strong {
+  color: #00e676;
+  font-weight: 600;
+}
+
+/* ── Responsive ── */
 @media (max-width: 420px) {
   .header .container { flex-wrap: wrap; gap: 8px; }
   .header-left { width: 100%; justify-content: center; }
   #current-date { font-size: 13px; }
   .gauge-value { font-size: 30px; }
   .gauge-cost { font-size: 22px; }
+  .budget-row { flex-wrap: wrap; }
+  .alert-badge { width: 100%; justify-content: center; }
   .mini-stats { grid-template-columns: 1fr 1fr; gap: 6px; }
   .mini-stat { padding: 10px 12px; }
   .mini-stat .val { font-size: 17px; }
-}
-
-/* ── Responsive (short) ── */
-@media (max-height: 500px) {
-  .header { padding: 6px 0; }
-  .header-logo { font-size: 22px; padding: 2px 10px; margin-right: 8px; }
-  .tab-btn { padding: 4px 12px; min-height: 32px; }
-  .date-selector { padding: 4px 0 2px; }
-  .main { padding: 4px 0 16px; }
-  .dial-section { margin-bottom: 6px; }
-  .gauge-value { font-size: 22px; }
-  .gauge-cost { font-size: 15px; }
-  .gauge-divider { margin: 3px auto; }
-  .chart-wrap { height: 80px; }
-  .chart-section { margin-bottom: 6px; }
-  #home-legend { margin-top: 4px; }
-  .mini-stat { padding: 6px 14px; }
-  .mini-stat .val { font-size: 16px; }
-  .mini-stat .lbl { font-size: 9px; }
 }
 
 /* ── Auth Pages ── */
@@ -1020,15 +1040,15 @@ body {
   .alert-badge { width: 100%; justify-content: center; }
   .mini-stats { grid-template-columns: 1fr 1fr; gap: 6px; }
   .mini-stat { padding: 10px 12px; }
-  .mini-stat .val { font-size: 15px; }
+  .mini-stat .val { font-size: 17px; }
   .auth-card { padding: 24px 18px; }
   .header-tabs { overflow-x: auto; gap: 2px; padding-bottom: 4px; }
+  .gi-section-a { grid-template-columns: 1fr; }
+  .gi-section-b { grid-template-columns: 1fr; }
+  .gi-scenarios { grid-template-columns: 1fr; }
   .gi-title { font-size: 18px; }
-  .gi-dial-value { font-size: 24px; }
-  .gi-mini-stats { grid-template-columns: 1fr 1fr; gap: 6px; }
-  .gi-mini-stat { padding: 10px 12px; }
-  .gi-mini-val { font-size: 17px; }
-  .gi-legend { gap: 12px; }
+  .gi-stat-value { font-size: 22px; }
+  .chart-wrap { height: 160px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -30,12 +30,7 @@ class EnergyDashboard {
     try {
       const profile = await energyAPI.getProfile();
       if (profile && gaugeManager.setConfig) {
-        gaugeManager.setConfig(profile.budget_kwh, profile.rate_per_kwh, {
-          has_tou: profile.has_tou,
-          peak_hours: profile.peak_hours,
-          offpeak_hours: profile.offpeak_hours,
-          shoulder_hours: profile.shoulder_hours
-        });
+        gaugeManager.setConfig(profile.budget_kwh, profile.rate_per_kwh);
       }
     } catch (err) {
       console.error('Failed to load profile config:', err);

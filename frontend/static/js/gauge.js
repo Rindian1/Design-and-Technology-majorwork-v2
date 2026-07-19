@@ -1,27 +1,57 @@
+const SEGMENTS = 20;
+
+const CX = 170;
+const CY = 185;
+const R = 135;
+const GAP_RAD = 0.035;
+
+const DIM = '#1e1e32';
+const COLOURS = ['#00e676', '#00e676', '#00e676', '#00e676',
+                 '#00e676', '#00e676', '#00e676', '#00e676',
+                 '#ffab00', '#ffab00', '#ffab00', '#ffab00',
+                 '#ffab00', '#ffab00', '#ffab00',
+                 '#ff5252', '#ff5252', '#ff5252', '#ff5252', '#ff5252'];
+
 class GaugeManager {
   constructor() {
     this.currentData = null;
     this.currentStats = null;
     this.budgetKwh = 30;
     this.ratePerKwh = 0.30;
-    this.hasTou = false;
-    this.peakHours = [];
-    this.offpeakHours = [];
-    this.shoulderHours = [];
-    this.fillEl = document.getElementById('dial-fill');
-    this.chartInstance = null;
+    this.svg = document.getElementById('energy-gauge');
+    this.initSegments();
     this.updateDisplay(null, null);
   }
 
-  setConfig(budgetKwh, ratePerKwh, tariffInfo) {
+  setConfig(budgetKwh, ratePerKwh) {
     if (budgetKwh != null) this.budgetKwh = budgetKwh;
     if (ratePerKwh != null) this.ratePerKwh = ratePerKwh;
-    if (tariffInfo) {
-      this.hasTou = tariffInfo.has_tou || false;
-      this.peakHours = tariffInfo.peak_hours || [];
-      this.offpeakHours = tariffInfo.offpeak_hours || [];
-      this.shoulderHours = tariffInfo.shoulder_hours || [];
+  }
+
+  initSegments() {
+    this.svg.innerHTML = '';
+    for (let i = 0; i < SEGMENTS; i++) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      el.setAttribute('d', this.segPath(i));
+      el.setAttribute('data-idx', i);
+      el.setAttribute('fill', 'none');
+      el.setAttribute('stroke', DIM);
+      el.setAttribute('stroke-width', '16');
+      el.setAttribute('stroke-linecap', 'butt');
+      this.svg.appendChild(el);
     }
+  }
+
+  segPath(i) {
+    const total = Math.PI;
+    const seg = total / SEGMENTS;
+    const a1 = Math.PI - (i / SEGMENTS) * total;
+    const a2 = a1 - seg + GAP_RAD;
+    const x1 = CX + R * Math.cos(a1);
+    const y1 = CY - R * Math.sin(a1);
+    const x2 = CX + R * Math.cos(a2);
+    const y2 = CY - R * Math.sin(a2);
+    return `M ${x1} ${y1} A ${R} ${R} 0 0 1 ${x2} ${y2}`;
   }
 
   updateDisplay(dailyData, statistics) {
@@ -33,10 +63,12 @@ class GaugeManager {
   render() {
     const s = this.currentStats;
     if (!s || !s.count) {
-      this.setDial(0);
+      this.drawSegments(0);
       this.setCentre(0, 0);
+      this.setBudgetBar(0);
+      this.setAlert(null);
+      this.setInsight('No data available for this date.');
       this.setMiniStats(null, null, null, null);
-      this.initChart(this.currentData);
       return;
     }
 
@@ -45,31 +77,97 @@ class GaugeManager {
     const avgKw = s.average / 1000;
     const cost = s.cost !== undefined ? s.cost : totalKwh * this.ratePerKwh;
     const fillRatio = Math.min(totalKwh / this.budgetKwh, 1);
+    const filled = Math.round(fillRatio * SEGMENTS);
 
-    this.setDial(fillRatio);
+    this.drawSegments(filled);
     this.setCentre(cost, totalKwh);
+    this.setBudgetBar(fillRatio);
+    this.setAlert(fillRatio);
     this.setMiniStats(totalKwh, peakKw, avgKw, cost);
-    this.initChart(this.currentData);
+    this.setInsightFromData(this.currentData);
   }
 
-  setDial(ratio) {
-    if (this.fillEl) {
-      const dashOffset = 440 - ratio * 440;
-      this.fillEl.style.strokeDashoffset = dashOffset;
+  drawSegments(filled) {
+    for (let i = 0; i < SEGMENTS; i++) {
+      const el = this.svg.querySelector(`[data-idx="${i}"]`);
+      if (!el) continue;
+      el.setAttribute('stroke', i < filled ? COLOURS[i] : DIM);
     }
   }
 
   setCentre(cost, totalKwh) {
-    const vEl = document.getElementById('gauge-value');
-    const cEl = document.getElementById('gauge-cost');
-    if (vEl) vEl.textContent = `$${cost.toFixed(2)}`;
-    if (cEl) cEl.textContent = `${totalKwh.toFixed(1)} kWh`;
+    document.getElementById('gauge-value').textContent = `$${cost.toFixed(2)}`;
+    document.getElementById('gauge-cost').textContent = `${totalKwh.toFixed(1)} kWh`;
+  }
+
+  setBudgetBar(ratio) {
+    const pct = Math.min(ratio * 100, 100);
+    const fill = document.getElementById('budget-fill');
+    fill.style.width = pct + '%';
+    fill.classList.toggle('over', ratio >= 1);
+  }
+
+  setAlert(ratio) {
+    const badge = document.getElementById('alert-badge');
+    if (ratio === null) {
+      badge.className = 'alert-badge ok';
+      badge.innerHTML = '<span>&#10003;</span><span>No Data</span>';
+    } else if (ratio >= 1) {
+      badge.className = 'alert-badge danger';
+      badge.innerHTML = '<span>&#9889;</span><span>Over Budget</span>';
+    } else if (ratio >= 0.8) {
+      badge.className = 'alert-badge warning';
+      badge.innerHTML = '<span>&#9889;</span><span>High Usage</span>';
+    } else {
+      badge.className = 'alert-badge ok';
+      badge.innerHTML = '<span>&#10003;</span><span>On Track</span>';
+    }
+  }
+
+  setInsight(text) {
+    document.getElementById('insight-text').textContent = text;
+  }
+
+  setInsightFromData(data) {
+    if (!data || !data.labels || !data.values || data.values.length === 0) {
+      this.setInsight('No hourly data to analyse for this date.');
+      return;
+    }
+
+    let peakVal = -1, peakIdx = -1;
+    for (let i = 0; i < data.values.length; i++) {
+      if (data.values[i] > peakVal) {
+        peakVal = data.values[i];
+        peakIdx = i;
+      }
+    }
+
+    if (peakIdx === -1) {
+      this.setInsight('No significant usage detected today.');
+      return;
+    }
+
+    const peakHour = data.labels[peakIdx];
+    const peakKw = (peakVal / 1000).toFixed(1);
+
+    const hourNum = parseInt(peakHour);
+    let suggestion = '';
+    if (hourNum >= 18) {
+      suggestion = 'Try running high-usage appliances earlier in the day to reduce peak costs.';
+    } else if (hourNum >= 6 && hourNum <= 9) {
+      suggestion = 'Consider using timers to spread morning load more evenly.';
+    } else if (hourNum >= 0 && hourNum <= 5) {
+      suggestion = 'Overnight draw detected. Check for devices left on standby.';
+    } else {
+      suggestion = 'Spreading usage across the day can help stay within budget.';
+    }
+
+    this.setInsight(`Peak at ${peakHour} (${peakKw} kW). ${suggestion}`);
   }
 
   setMiniStats(totalKwh, peakKw, avgKw, cost) {
     const set = (id, v, suffix) => {
       const el = document.getElementById(id);
-      if (!el) return;
       if (v === null || v === undefined) {
         el.innerHTML = '--';
       } else {
@@ -80,114 +178,11 @@ class GaugeManager {
     set('stat-peak', peakKw, 'kW');
     set('stat-avg', avgKw, 'kW');
     const costEl = document.getElementById('stat-cost');
-    if (!costEl) return;
     if (cost === null || cost === undefined) {
       costEl.textContent = '--';
     } else {
       costEl.textContent = `$${cost.toFixed(2)}`;
     }
-  }
-
-  /* ── Tariff helpers ── */
-
-  _formatHour(h) {
-    if (h === 0 || h === 24) return '12a';
-    if (h === 12) return '12p';
-    return h < 12 ? h + 'a' : (h - 12) + 'p';
-  }
-
-  _formatTimeRange(r) {
-    return this._formatHour(r.start) + '\u2013' + this._formatHour(r.end);
-  }
-
-  _getTariffPeriod(hour) {
-    const inRange = (h, ranges) => ranges.some(r => {
-      const s = r.start, e = r.end;
-      return s < e ? s <= h && h < e : h >= s || h < e;
-    });
-    if (inRange(hour, this.peakHours)) return 'peak';
-    if (inRange(hour, this.offpeakHours)) return 'offpeak';
-    if (inRange(hour, this.shoulderHours)) return 'shoulder';
-    return 'offpeak';
-  }
-
-  _buildLegendItems() {
-    const fmt = (ranges) => ranges.map(r => this._formatTimeRange(r)).join(', ');
-    const items = [];
-    if (this.peakHours.length) items.push({ cls: 'peak', label: 'Peak (' + fmt(this.peakHours) + ')' });
-    if (this.shoulderHours.length) items.push({ cls: 'shoulder', label: 'Shoulder (' + fmt(this.shoulderHours) + ')' });
-    if (this.offpeakHours.length) items.push({ cls: 'off', label: 'Off-Peak (' + fmt(this.offpeakHours) + ')' });
-    if (!this.peakHours.length && !this.shoulderHours.length) {
-      items.push({ cls: 'off', label: 'Flat Rate' });
-    }
-    return items;
-  }
-
-  initChart(data) {
-    if (this.chartInstance) {
-      this.chartInstance.destroy();
-      this.chartInstance = null;
-    }
-
-    const canvas = document.getElementById('home-chart');
-    if (!canvas) return;
-
-    const legendEl = document.getElementById('home-legend');
-    if (legendEl) {
-      const items = this._buildLegendItems();
-      legendEl.innerHTML = items.map(item =>
-        `<span class="dl-item"><span class="dl-dot ${item.cls}"></span> ${item.label}</span>`
-      ).join('');
-    }
-
-    if (!data || !data.values || data.values.length === 0) return;
-
-    const fullData = data.values.map(v => +(v / 1000).toFixed(3));
-    const tariffColors = { peak: '#ff5252', shoulder: '#ffab00', offpeak: '#00e676' };
-
-    const timeLabels = ['12a','3a','6a','9a','12p','3p','6p','9p'];
-    const labels = Array(24).fill('');
-    for (let i = 0; i < timeLabels.length; i++) {
-      labels[i * 3] = timeLabels[i];
-    }
-
-    const ctx = canvas.getContext('2d');
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    this.chartInstance = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: fullData,
-          backgroundColor: fullData.map((v, i) => {
-            const period = this._getTariffPeriod(i);
-            if (period === 'peak') return 'rgba(255, 82, 82, 0.35)';
-            return tariffColors[period] + '40';
-          }),
-          borderColor: 'transparent',
-          borderWidth: 0,
-          borderRadius: 2,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: reduceMotion ? 0 : undefined },
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: {
-          y: { display: false, beginAtZero: true },
-          x: {
-            grid: { display: false },
-            ticks: {
-              color: '#777',
-              font: { size: 9 },
-              maxRotation: 0,
-            },
-          }
-        }
-      }
-    });
   }
 
   loadDataForDate(date) {
