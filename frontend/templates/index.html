@@ -11,22 +11,12 @@
     <button id="next-day" class="nav-arrow">&#8594;</button>
   </div>
 
-  {# ── Graph Tab (Idea 2: Dial + Chart + Mini Stats) ── #}
+  {# ── Graph Tab ── #}
   <div id="graph-panel" class="tab-panel active" role="tabpanel">
 
-    <div class="dial-section">
+    <div class="gauge-card">
       <div class="gauge-wrapper">
-        <svg id="energy-gauge" viewBox="0 0 340 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Energy usage gauge">
-          <defs>
-            <linearGradient id="dialGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#00e676"/>
-              <stop offset="40%" stop-color="#ffab00"/>
-              <stop offset="100%" stop-color="#ff5252"/>
-            </linearGradient>
-          </defs>
-          <path class="dial-bg" d="M 30 175 A 140 140 0 0 1 310 175"/>
-          <path class="dial-fill" id="dial-fill" d="M 30 175 A 140 140 0 0 1 310 175"/>
-        </svg>
+        <svg id="energy-gauge" viewBox="0 0 340 210" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="gauge-centre">
           <div class="gauge-label-top" id="gauge-label-top">Current spending</div>
           <div class="gauge-value-row">
@@ -37,13 +27,26 @@
           <div class="gauge-cost" id="gauge-cost">-- kWh</div>
         </div>
       </div>
+
+      <div class="budget-row">
+        <div class="budget-bar-wrap">
+          <div class="budget-label">So Far</div>
+          <div class="budget-track">
+            <div class="budget-fill" id="budget-fill" style="width:0%"></div>
+            <div class="budget-marker" id="budget-marker" style="left:100%"></div>
+            <span class="budget-marker-label" id="budget-marker-label" style="left:100%">Budget</span>
+          </div>
+        </div>
+        <div class="alert-badge ok" id="alert-badge">
+          <span>&#10003;</span>
+          <span>On Track</span>
+        </div>
+      </div>
     </div>
 
-    <div class="chart-section">
-      <div class="chart-wrap">
-        <canvas id="home-chart" role="img" aria-label="Hourly energy usage bar chart coloured by tariff period"></canvas>
-      </div>
-      <div id="home-legend"></div>
+    <div class="insight-bar" id="insight-bar">
+      <span class="icon">&#128161;</span>
+      <p id="insight-text">Loading usage analysis...</p>
     </div>
 
     <div class="mini-stats">

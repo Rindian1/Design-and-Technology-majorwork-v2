@@ -503,16 +503,6 @@ class RecommendationEngine:
             today_stats = HeatingUsage.get_statistics(session, parsed, user_id=user_id)
             today_kwh = (today_stats.total or 0) / 1000 if today_stats and today_stats.count > 0 else 0
             today_records = HeatingUsage.get_by_date(session, parsed, user_id=user_id) if today_stats and today_stats.count > 0 else []
-            hourly_dicts = [
-                {'timestamp': r.timestamp.strftime('%Y-%m-%d %H:%M:%S'), 'watt_usage': r.watt_usage}
-                for r in today_records
-            ]
-            today_cost = round(compute_daily_cost(hourly_dicts, profile), 2) if hourly_dicts else 0
-
-            hourly_records = []
-            for rec in today_records:
-                hour = rec.timestamp.hour if hasattr(rec.timestamp, 'hour') else int(rec.timestamp.split(' ')[1].split(':')[0])
-                hourly_records.append({'hour': hour, 'watt_usage': rec.watt_usage})
 
             # 1. Weekly spending (last 7 days)
             weekly_spending = []
@@ -594,13 +584,6 @@ class RecommendationEngine:
                 'tip_banner': tip_banner,
                 'budget_kwh': budget_kwh,
                 'rate_per_kwh': rate,
-                'today_kwh': round(today_kwh, 2),
-                'today_cost': today_cost,
-                'hourly_records': hourly_records,
-                'has_tou': profile.get('has_tou', False),
-                'peak_hours': profile.get('peak_hours', []),
-                'offpeak_hours': profile.get('offpeak_hours', []),
-                'shoulder_hours': profile.get('shoulder_hours', []),
             }
         finally:
             session.close()
