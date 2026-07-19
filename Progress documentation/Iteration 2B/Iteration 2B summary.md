@@ -12,7 +12,7 @@ Allready done:
 Current TODO: 
 
 MAJOR: 
-1) General insights should be engineered to be more meaningful
+1) General insights should be engineered to be more meaningful *DONE* half done
 2) Realistic seed data should be created  *DONE*
 3) Make the home page analyse the survey input data and make calculations based on that *DONE*
 4) Spread out the UI for general insights and appliance insights *DONE*
