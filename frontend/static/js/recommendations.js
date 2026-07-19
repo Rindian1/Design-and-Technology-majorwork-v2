@@ -3,7 +3,6 @@ class RecommendationsManager {
         this._generalContainer = document.getElementById('general-container');
         this._applianceContainer = document.getElementById('appliance-container');
         this._chartInstance = null;
-        this._trendChartInstance = null;
     }
 
     async loadGeneralInsights(date) {
@@ -50,152 +49,147 @@ class RecommendationsManager {
         }
     }
 
-    _renderGeneralDetailed(data) {
-        const ws = data.weekly_spending || [];
-        const vsLastWeek = data.today_vs_last_week;
-        const vsAvg = data.today_vs_average;
-        const tips = data.behaviour_tips || [];
-        const tipBanner = data.tip_banner || '';
-        const rate = data.rate_per_kwh || 0.30;
+    /* ── Helpers ── */
 
-        const dayLabels = ws.map(d => {
-            const dt = new Date(d.date + 'T00:00:00');
-            return dt.toLocaleDateString('en', { weekday: 'short' });
+    _formatHour(h) {
+        if (h === 0 || h === 24) return '12a';
+        if (h === 12) return '12p';
+        return h < 12 ? h + 'a' : (h - 12) + 'p';
+    }
+
+    _formatTimeRange(r) {
+        return this._formatHour(r.start) + '\u2013' + this._formatHour(r.end);
+    }
+
+    _getTariffPeriod(hour, peakHours, offpeakHours, shoulderHours) {
+        const inRange = (h, ranges) => ranges.some(r => {
+            const s = r.start, e = r.end;
+            return s < e ? s <= h && h < e : h >= s || h < e;
         });
-        const costValues = ws.map(d => d.cost);
+        if (inRange(hour, peakHours)) return 'peak';
+        if (inRange(hour, offpeakHours)) return 'offpeak';
+        if (inRange(hour, shoulderHours)) return 'shoulder';
+        return 'offpeak';
+    }
 
-        const hasPositive = vsLastWeek && vsLastWeek.is_positive;
-        const hasNegative = vsAvg && !vsAvg.is_positive;
+    _buildLegendItems(peakHours, offpeakHours, shoulderHours) {
+        const fmt = (ranges) => ranges.map(r => this._formatTimeRange(r)).join(', ');
+        const items = [];
+        if (peakHours.length) items.push({ cls: 'peak', label: 'Peak (' + fmt(peakHours) + ')' });
+        if (shoulderHours.length) items.push({ cls: 'shoulder', label: 'Shoulder (' + fmt(shoulderHours) + ')' });
+        if (offpeakHours.length) items.push({ cls: 'off', label: 'Off-Peak (' + fmt(offpeakHours) + ')' });
+        if (!peakHours.length && !shoulderHours.length) {
+            items.push({ cls: 'off', label: 'Flat Rate' });
+        }
+        return items;
+    }
 
-        const positiveHtml = hasPositive ? `
-            <div class="insight-module insight-positive">
-                <div class="insight-module-title">Today was lower than this time last week</div>
-                <div class="insight-metrics">
-                    <span class="metric metric-green">${vsLastWeek.diff_pct}% decrease</span>
-                    <span class="metric metric-green">${vsLastWeek.diff_kwh} kWh saved</span>
-                    <span class="metric metric-green">$${vsLastWeek.savings} saved</span>
-                </div>
-                <div class="insight-baseline">Baseline: ${vsLastWeek.baseline_kwh} kWh (last week)</div>
-            </div>
-        ` : '';
+    /* ── Render ── */
 
-        const negativeHtml = hasNegative ? `
-            <div class="insight-module insight-negative">
-                <div class="insight-module-title">Today was higher than your daily average</div>
-                <div class="insight-metrics">
-                    <span class="metric metric-red">${vsAvg.diff_pct}% above average</span>
-                </div>
-                <div class="insight-baseline">7-day average: ${vsAvg.avg_kwh} kWh</div>
-            </div>
-        ` : '';
+    _renderGeneralDetailed(data) {
+        const todayKwh = data.today_kwh || 0;
+        const todayCost = data.today_cost || 0;
+        const hourly = data.hourly_records || [];
+        const peakHours = data.peak_hours || [];
+        const offpeakHours = data.offpeak_hours || [];
+        const shoulderHours = data.shoulder_hours || [];
 
-        const tipsHtml = tips.length > 0 ? `
-            <div class="behaviour-tips">
-                <h3 class="section-subtitle">Behavioural Advice</h3>
-                <div class="tips-list">
-                    ${tips.map(t => `
-                        <div class="rec-card severity-${t.severity || 'info'}">
-                            <div class="rec-icon">${t.icon || '\u{1f4a1}'}</div>
-                            <div class="rec-body">
-                                <div class="rec-title">${this._escapeHtml(t.title || '')}</div>
-                                <div class="rec-description">${this._escapeHtml(t.description || '')}</div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        ` : '';
+        const legendItems = this._buildLegendItems(peakHours, offpeakHours, shoulderHours);
 
-        const bannerHtml = tipBanner ? `
-            <div class="tip-banner">
-                <span class="tip-banner-icon">\u{1f4a1}</span>
-                <span class="tip-banner-text"><strong>Tip:</strong> ${this._escapeHtml(tipBanner)}</span>
-            </div>
-        ` : '';
+        const dialFillPct = data.budget_kwh > 0 ? Math.min(todayKwh / data.budget_kwh, 1) : 0;
+        const dashOffset = 440 - dialFillPct * 440;
+
+        const peakKw = hourly.length > 0 ? Math.max(...hourly.map(r => r.watt_usage)) / 1000 : 0;
 
         this._generalContainer.innerHTML = `
             <div class="general-insights">
                 <h1 class="gi-title">General Insights</h1>
 
-                <div class="gi-section-a">
-                    <div class="gi-chart-col">
-                        <h2 class="gi-section-title">Weekly Spending</h2>
-                        <div class="chart-wrap">
-                            <canvas id="weekly-chart" role="img" aria-label="Bar chart showing daily energy spending for the past week"></canvas>
-                        </div>
-                    </div>
-                    <div class="gi-insights-col">
-                        ${positiveHtml}
-                        ${negativeHtml}
-                        ${!hasPositive && !hasNegative ? `
-                            <div class="insight-module insight-neutral">
-                                <div class="insight-module-title">Usage is on par with recent trends</div>
-                                <div class="insight-baseline">Keep monitoring to identify patterns.</div>
+                <div class="gi-dial-section">
+                    <div class="gi-dial-wrap">
+                        <svg class="gi-dial-svg" viewBox="0 0 340 200" role="img" aria-label="Gauge showing today's energy spending of $${todayCost}">
+                            <defs>
+                                <linearGradient id="giDialGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#00e676"/>
+                                    <stop offset="40%" stop-color="#ffab00"/>
+                                    <stop offset="100%" stop-color="#ff5252"/>
+                                </linearGradient>
+                            </defs>
+                            <path class="gi-dial-bg" d="M 30 175 A 140 140 0 0 1 310 175"/>
+                            <path class="gi-dial-fill" d="M 30 175 A 140 140 0 0 1 310 175" stroke-dashoffset="${dashOffset}"/>
+                        </svg>
+                        <div class="gi-dial-centre">
+                            <div class="gi-dial-label-top">Current spending</div>
+                            <div class="gi-dial-value-row">
+                                <span class="gi-dial-value">$${todayCost}</span>
                             </div>
-                        ` : ''}
-                    </div>
-                </div>
-
-                <div class="gi-section-b">
-                    <div class="gi-stat-card">
-                        <span class="gi-stat-label">Average Weekly Spending</span>
-                        <span class="gi-stat-value">$${data.avg_weekly_spend || '0.00'}</span>
-                    </div>
-                    <div class="gi-stat-card">
-                        <span class="gi-stat-label">Forecasted Monthly Bill</span>
-                        <span class="gi-stat-value">$${data.forecasted_monthly || '0.00'}</span>
-                    </div>
-                </div>
-
-                <div class="gi-section-c">
-                    <h3 class="gi-section-title">Savings in monthly bill if appliance usage is reduced by:</h3>
-                    <div class="gi-scenarios">
-                        <div class="gi-scenario-card">
-                            <span class="gi-scenario-pct">2%</span>
-                            <span class="gi-scenario-value">$${data.savings_scenarios.pct_2 || '0.00'}</span>
-                            <span class="gi-scenario-label">saved / month</span>
-                        </div>
-                        <div class="gi-scenario-card">
-                            <span class="gi-scenario-pct">4%</span>
-                            <span class="gi-scenario-value">$${data.savings_scenarios.pct_4 || '0.00'}</span>
-                            <span class="gi-scenario-label">saved / month</span>
-                        </div>
-                        <div class="gi-scenario-card">
-                            <span class="gi-scenario-pct">6%</span>
-                            <span class="gi-scenario-value">$${data.savings_scenarios.pct_6 || '0.00'}</span>
-                            <span class="gi-scenario-label">saved / month</span>
+                            <div class="gi-dial-divider"></div>
+                            <div class="gi-dial-today-label">Energy usage</div>
+                            <div class="gi-dial-cost">${todayKwh} kWh</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="gi-section-d">
-                    <h3 class="gi-section-title">All-Time Spending Trend</h3>
-                    <div class="chart-wrap">
-                        <canvas id="trend-chart" role="img" aria-label="Line chart showing average daily spending over time"></canvas>
+                <div class="gi-chart-section">
+                    <div class="gi-chart-wrap">
+                        <canvas id="gi-hourly-chart" role="img" aria-label="Hourly energy usage bar chart coloured by tariff period"></canvas>
                     </div>
                 </div>
 
-                ${tipsHtml}
+                <div class="gi-legend">
+                    ${legendItems.map(item => `
+                        <span class="gi-legend-item"><span class="gi-dot ${item.cls}"></span> ${item.label}</span>
+                    `).join('')}
+                </div>
 
-                ${bannerHtml}
+                <div class="gi-mini-stats">
+                    <div class="gi-mini-stat">
+                        <div class="gi-mini-lbl">Total Today</div>
+                        <div class="gi-mini-val">${todayKwh} <small>kWh</small></div>
+                    </div>
+                    <div class="gi-mini-stat">
+                        <div class="gi-mini-lbl">Today's Cost</div>
+                        <div class="gi-mini-val">$${todayCost}</div>
+                    </div>
+                    <div class="gi-mini-stat">
+                        <div class="gi-mini-lbl">Peak Demand</div>
+                        <div class="gi-mini-val">${peakKw.toFixed(2)} <small>kW</small></div>
+                    </div>
+                    <div class="gi-mini-stat">
+                        <div class="gi-mini-lbl">vs Budget</div>
+                        <div class="gi-mini-val" style="color:${dialFillPct > 0.7 ? '#ff5252' : dialFillPct > 0.4 ? '#ffab00' : '#00e676'}">${Math.round(dialFillPct * 100)}%</div>
+                    </div>
+                </div>
             </div>
         `;
 
-        this._initChart(dayLabels, costValues);
-        this._initTrendChart();
+        this._initHourlyChart(hourly, peakHours, offpeakHours, shoulderHours);
     }
 
-    _initChart(labels, values) {
+    _initHourlyChart(hourlyRecords, peakHours, offpeakHours, shoulderHours) {
         if (this._chartInstance) {
             this._chartInstance.destroy();
             this._chartInstance = null;
         }
 
-        const canvas = document.getElementById('weekly-chart');
-        if (!canvas) return;
+        const canvas = document.getElementById('gi-hourly-chart');
+        if (!canvas || hourlyRecords.length === 0) return;
+
+        const fullData = Array(24).fill(0);
+        hourlyRecords.forEach(r => {
+            if (r.hour >= 0 && r.hour < 24) fullData[r.hour] = r.watt_usage;
+        });
+
+        const maxVal = Math.max(...fullData, 1);
+        const tariffColors = { peak: '#ff5252', shoulder: '#ffab00', offpeak: '#00e676' };
+
+        const timeLabels = ['12a','3a','6a','9a','12p','3p','6p','9p'];
+        const labels = Array(24).fill('');
+        for (let i = 0; i < timeLabels.length; i++) {
+            labels[i * 3] = timeLabels[i];
+        }
 
         const ctx = canvas.getContext('2d');
-
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         this._chartInstance = new Chart(ctx, {
@@ -203,137 +197,36 @@ class RecommendationsManager {
             data: {
                 labels: labels,
                 datasets: [{
-                    data: values,
-                    backgroundColor: values.map(v => {
-                        const max = Math.max(...values, 1);
-                        const ratio = v / max;
-                        if (ratio > 0.7) return '#ff525288';
-                        if (ratio > 0.4) return '#ffab0088';
-                        return '#00e67688';
+                    data: fullData.map(v => +(v / 1000).toFixed(3)),
+                    backgroundColor: fullData.map((v, i) => {
+                        const period = this._getTariffPeriod(i, peakHours, offpeakHours, shoulderHours);
+                        const color = tariffColors[period] || '#00e676';
+                        const ratio = v / maxVal;
+                        return color + Math.round(20 + ratio * 35).toString(16).padStart(2, '0');
                     }),
-                    borderColor: values.map(v => {
-                        const max = Math.max(...values, 1);
-                        const ratio = v / max;
-                        if (ratio > 0.7) return '#ff5252';
-                        if (ratio > 0.4) return '#ffab00';
-                        return '#00e676';
-                    }),
-                    borderWidth: 2,
-                    borderRadius: 4,
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    borderRadius: 2,
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: { duration: reduceMotion ? 0 : undefined },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: (ctx) => `$${ctx.raw}`,
-                        },
-                    },
-                },
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255,255,255,0.04)' },
-                        ticks: {
-                            color: '#888',
-                            font: { size: 10 },
-                            callback: (v) => '$' + v,
-                        },
-                    },
+                    y: { display: false, beginAtZero: true },
                     x: {
                         grid: { display: false },
                         ticks: {
-                            color: '#888',
-                            font: { size: 10 },
+                            color: '#666',
+                            font: { size: 9 },
+                            maxRotation: 0,
                         },
-                    },
-                },
-            },
+                    }
+                }
+            }
         });
-    }
-
-    async _initTrendChart() {
-        if (this._trendChartInstance) {
-            this._trendChartInstance.destroy();
-            this._trendChartInstance = null;
-        }
-
-        const canvas = document.getElementById('trend-chart');
-        if (!canvas) return;
-
-        try {
-            const data = await energyAPI.getGeneralTrend();
-            if (!data || !data.buckets || data.buckets.length === 0) return;
-
-            const labels = data.buckets.map(b => b.label);
-            const values = data.buckets.map(b => b.avg_cost);
-
-            const ctx = canvas.getContext('2d');
-            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-            gradient.addColorStop(0, '#00e67688');
-            gradient.addColorStop(1, '#00e67600');
-            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-            this._trendChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        borderColor: '#00e676',
-                        backgroundColor: gradient,
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.3,
-                        pointBackgroundColor: '#00e676',
-                        pointBorderColor: '#0d0d1a',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: reduceMotion ? 0 : undefined },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => {
-                                    const b = data.buckets[ctx.dataIndex];
-                                    return `$${b.avg_cost}/day avg (${b.num_days} days)`;
-                                },
-                            },
-                        },
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255,255,255,0.04)' },
-                            ticks: {
-                                color: '#888',
-                                font: { size: 10 },
-                                callback: (v) => '$' + v,
-                            },
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                color: '#888',
-                                font: { size: 10 },
-                            },
-                        },
-                    },
-                },
-            });
-        } catch (err) {
-            console.warn('Failed to load all-time trend:', err);
-        }
     }
 
     _renderApplianceRecs(recs) {
