@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Idea 1 — Budget Bar + Column Graph</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0d0d1a; color: #e0e0e0; min-height: 100vh;
+  display: flex; justify-content: center; align-items: center;
+  padding: 30px 20px;
+}
+.page {
+  width: 100%; max-width: 900px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+
+/* Header */
+.header { display: flex; align-items: center; justify-content: space-between; }
+.nav-arrow {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #888; font-size: 20px;
+}
+.date-block { text-align: center; }
+.date-day { font-size: 14px; color: #aaa; }
+.date-main { font-size: 22px; font-weight: 600; color: #fff; }
+
+/* Section labels */
+.section-label {
+  font-size: 13px; font-weight: 600; color: #ccc;
+  margin-bottom: 6px;
+}
+
+/* Budget Bar */
+.budget-track {
+  width: 100%;   height: 16px; background: rgba(255,255,255,0.06);
+  border-radius: 12px; overflow: hidden; margin-top: 4px;
+}
+.budget-fill {
+  height: 100%; width: 64%; border-radius: 12px;
+  background: linear-gradient(90deg, #00e676, #ffab00, #ff5252);
+  transition: width 0.4s;
+}
+.budget-row {
+  display: flex; justify-content: space-between;
+  font-size: 14px; margin-top: 6px;
+}
+.budget-used { color: #e0e0e0; }
+.budget-remaining { color: #00e676; }
+
+/* Legend */
+.legend { display: flex; gap: 16px; margin-bottom: 2px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999; }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+.legend-dot.peak { background: #ff5252; }
+.legend-dot.offpeak { background: #00e676; }
+.legend-dot.shoulder { background: #ffab00; }
+
+/* Chart wrapper */
+.chart-section { flex: 1; display: flex; flex-direction: column; }
+.chart-wrap { position: relative; width: 100%; flex: 1;   min-height: 200px; }
+
+/* Hour labels under chart */
+.hour-labels {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: #555; margin-top: 4px;
+}
+
+/* Mini Stats (matches current app) */
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.mini-stat {
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.mini-stat .lbl { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+.mini-stat .val { font-size: 18px; font-weight: 600; color: #fff; margin-top: 2px; }
+.mini-stat .val small { font-size: 12px; font-weight: 400; color: #888; margin-left: 2px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div class="nav-arrow">&#x2039;</div>
+    <div class="date-block">
+      <div class="date-day">Monday</div>
+      <div class="date-main">July 12, 2026</div>
+    </div>
+    <div class="nav-arrow">&#x203a;</div>
+  </div>
+
+  <!-- Budget Bar -->
+  <div>
+    <div class="section-label">Daily Budget</div>
+    <div class="budget-track">
+      <div class="budget-fill" style="width:64%"></div>
+    </div>
+    <div class="budget-row">
+      <span class="budget-used">$4.50 used</span>
+      <span class="budget-remaining">$2.50 remaining of $7.00</span>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-section">
+    <div class="section-label">Hourly Usage (kWh)</div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot peak"></span> Peak (2pm–8pm)</span>
+      <span class="legend-item"><span class="legend-dot shoulder"></span> Shoulder</span>
+      <span class="legend-item"><span class="legend-dot offpeak"></span> Off-Peak</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="hourlyChart"></canvas>
+    </div>
+    <div class="hour-labels">
+      <span>12a</span><span>3a</span><span>6a</span><span>9a</span><span>12p</span>
+      <span>3p</span><span>6p</span><span>9p</span><span>11p</span>
+    </div>
+  </div>
+
+  <!-- Mini Stats -->
+  <div class="mini-stats">
+    <div class="mini-stat">
+      <div class="lbl">Today's Cost</div>
+      <div class="val">$4.50</div>
+    </div>
+    <div class="mini-stat">
+      <div class="lbl">Energy Used</div>
+      <div class="val">15.0 <small>kWh</small></div>
+    </div>
+    <div class="mini-stat">
+      <div class="lbl">Budget Left</div>
+      <div class="val" style="color:#ffab00">36%</div>
+    </div>
+    <div class="mini-stat">
+      <div class="lbl">Peak Usage</div>
+      <div class="val">0.72 <small>kW</small></div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const canvas = document.getElementById('hourlyChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const rawData = [
+    0.12, 0.10, 0.09, 0.08, 0.08, 0.15,
+    0.32, 0.40, 0.48, 0.45, 0.38, 0.35,
+    0.42, 0.48, 0.52, 0.58, 0.62, 0.60,
+    0.68, 0.72, 0.70, 0.65, 0.52, 0.38
+  ];
+
+  const maxVal = Math.max(...rawData, 1);
+
+  const colors = rawData.map((v, i) => {
+    const inPeak = i >= 14 && i <= 19;
+    const ratio = v / maxVal;
+    if (inPeak) return `rgba(255, 82, 82, ${0.5 + ratio * 0.5})`;
+    if (ratio > 0.5) return `rgba(255, 171, 0, ${0.5 + ratio * 0.5})`;
+    return `rgba(0, 230, 118, ${0.4 + ratio * 0.6})`;
+  });
+
+  const borderColors = rawData.map((v, i) => {
+    const inPeak = i >= 14 && i <= 19;
+    const ratio = v / maxVal;
+    if (inPeak && ratio > 0.5) return '#ff5252';
+    if (ratio > 0.5 && !inPeak) return '#ffab00';
+    return '#00e676';
+  });
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Array(24).fill(''),
+      datasets: [{
+        data: rawData,
+        backgroundColor: colors,
+        borderColor: borderColors,
+        borderWidth: 1.5,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#888', font: { size: 10 }, callback: v => v + 'kWh' },
+        },
+        x: { display: false }
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>

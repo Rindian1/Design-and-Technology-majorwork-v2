@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Idea 3 — Full Dial + Full Graph</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0d0d1a; color: #e0e0e0; min-height: 100vh;
+  display: flex; justify-content: center; align-items: center;
+  padding: 40px 20px;
+}
+.page {
+  width: 100%; max-width: 900px;
+  display: flex; flex-direction: column; gap: 28px;
+}
+
+/* Header */
+.header { display: flex; align-items: center; justify-content: space-between; }
+.nav-arrow {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #888; font-size: 20px;
+}
+.date-block { text-align: center; }
+.date-day { font-size: 14px; color: #aaa; }
+.date-main { font-size: 22px; font-weight: 600; color: #fff; }
+
+/* Section labels */
+.section-label {
+  font-size: 13px; font-weight: 600; color: #ccc; margin-bottom: 8px;
+}
+
+/* ── Two-column: Dial + Graph side by side ── */
+.two-col {
+  display: flex; gap: 28px;
+}
+
+/* Dial column */
+.dial-col {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+}
+.dial-wrap {
+  position: relative; width: 100%; max-width: 240px;
+  aspect-ratio: 1.7 / 1; overflow: hidden;
+}
+.dial-svg { width: 100%; height: 100%; display: block; }
+.dial-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 14; }
+.dial-fill {
+  fill: none; stroke: url(#dialGrad); stroke-width: 14;
+  stroke-linecap: round;
+  stroke-dasharray: 240; stroke-dashoffset: 75;
+  transition: stroke-dashoffset 0.6s;
+}
+.dial-value {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  text-align: center; padding-bottom: 2px;
+}
+.dial-cost { font-size: 28px; font-weight: 700; color: #00e676; line-height: 1; }
+.dial-kwh { font-size: 14px; color: #999; margin-top: 4px; }
+.dial-kwh strong { color: #e0e0e0; }
+.dial-budget { font-size: 12px; color: #666; margin-top: 6px; }
+
+/* Dial legend */
+.dial-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 8px; }
+.dl-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #888; }
+.dl-dot { width: 8px; height: 8px; border-radius: 3px; }
+.dl-dot.peak { background: #ff5252; }
+.dl-dot.off { background: #00e676; }
+.dl-dot.shoulder { background: #ffab00; }
+
+/* Graph column */
+.graph-col {
+  flex: 1; display: flex; flex-direction: column;
+}
+.chart-wrap { position: relative; width: 100%; flex: 1; min-height: 220px; }
+
+/* Hour labels under chart */
+.hour-labels {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: #555; margin-top: 4px;
+}
+
+/* Mini Stats (matches current app) */
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.mini-stat {
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.mini-stat .lbl { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+.mini-stat .val { font-size: 20px; font-weight: 600; color: #fff; margin-top: 2px; }
+.mini-stat .val small { font-size: 12px; font-weight: 400; color: #888; margin-left: 2px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div class="nav-arrow">&#x2039;</div>
+    <div class="date-block">
+      <div class="date-day">Monday</div>
+      <div class="date-main">July 12, 2026</div>
+    </div>
+    <div class="nav-arrow">&#x203a;</div>
+  </div>
+
+  <!-- Two-col: Dial + Graph -->
+  <div class="two-col">
+    <!-- Dial -->
+    <div class="dial-col">
+      <div class="section-label">Today</div>
+      <div class="dial-wrap">
+        <svg class="dial-svg" viewBox="0 0 240 145">
+          <defs>
+            <linearGradient id="dialGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#00e676"/>
+              <stop offset="40%" stop-color="#ffab00"/>
+              <stop offset="100%" stop-color="#ff5252"/>
+            </linearGradient>
+          </defs>
+          <path class="dial-bg" d="M 20 125 A 100 100 0 0 1 220 125"/>
+          <path class="dial-fill" d="M 20 125 A 100 100 0 0 1 220 125"/>
+        </svg>
+        <div class="dial-value">
+          <div class="dial-cost">$4.50</div>
+          <div class="dial-kwh"><strong>15.0</strong> kWh</div>
+          <div class="dial-budget">Budget: $7.00</div>
+        </div>
+      </div>
+      <div class="dial-legend">
+        <span class="dl-item"><span class="dl-dot peak"></span> Peak</span>
+        <span class="dl-item"><span class="dl-dot shoulder"></span> Mid</span>
+        <span class="dl-item"><span class="dl-dot off"></span> Off</span>
+      </div>
+    </div>
+
+    <!-- Graph -->
+    <div class="graph-col">
+      <div class="section-label">24-Hour Usage</div>
+      <div class="chart-wrap">
+        <canvas id="fullChart"></canvas>
+      </div>
+      <div class="hour-labels">
+        <span>12a</span><span>3a</span><span>6a</span><span>9a</span><span>12p</span>
+        <span>3p</span><span>6p</span><span>9p</span><span>11p</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini Stats -->
+  <div class="mini-stats">
+    <div class="mini-stat">
+      <div class="lbl">Weekly Avg</div>
+      <div class="val">$5.20</div>
+    </div>
+    <div class="mini-stat">
+      <div class="lbl">Forecast</div>
+      <div class="val">$145 <small>this month</small></div>
+    </div>
+    <div class="mini-stat">
+      <div class="lbl">vs Budget</div>
+      <div class="val" style="color:#ffab00">-14%</div>
+    </div>
+    <div class="mini-stat">
+      <div class="lbl">Peak Cost</div>
+      <div class="val" style="color:#ff5252">$2.80</div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const canvas = document.getElementById('fullChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const rawData = [
+    0.12, 0.10, 0.09, 0.08, 0.08, 0.15,
+    0.32, 0.40, 0.48, 0.45, 0.38, 0.35,
+    0.42, 0.48, 0.52, 0.58, 0.62, 0.60,
+    0.68, 0.72, 0.70, 0.65, 0.52, 0.38
+  ];
+
+  const maxVal = Math.max(...rawData, 1);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Array(24).fill(''),
+      datasets: [{
+        data: rawData,
+        backgroundColor: rawData.map((v, i) => {
+          const inPeak = i >= 14 && i <= 19;
+          const ratio = v / maxVal;
+          if (inPeak) return `rgba(255, 82, 82, ${0.5 + ratio * 0.5})`;
+          if (ratio > 0.5) return `rgba(255, 171, 0, ${0.4 + ratio * 0.5})`;
+          return `rgba(0, 230, 118, ${0.35 + ratio * 0.6})`;
+        }),
+        borderColor: rawData.map((v, i) => {
+          if (i >= 14 && i <= 19) return '#ff525288';
+          return 'transparent';
+        }),
+        borderWidth: 1,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#888', font: { size: 10 }, callback: v => v + 'kWh' },
+        },
+        x: { display: false }
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
