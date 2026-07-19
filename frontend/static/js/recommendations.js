@@ -3,6 +3,7 @@ class RecommendationsManager {
         this._generalContainer = document.getElementById('general-container');
         this._applianceContainer = document.getElementById('appliance-container');
         this._chartInstance = null;
+        this._trendChartInstance = null;
     }
 
     async loadGeneralInsights(date) {
@@ -61,7 +62,7 @@ class RecommendationsManager {
             const dt = new Date(d.date + 'T00:00:00');
             return dt.toLocaleDateString('en', { weekday: 'short' });
         });
-        const kwhValues = ws.map(d => d.total_kwh);
+        const costValues = ws.map(d => d.cost);
 
         const hasPositive = vsLastWeek && vsLastWeek.is_positive;
         const hasNegative = vsAvg && !vsAvg.is_positive;
@@ -120,7 +121,7 @@ class RecommendationsManager {
                     <div class="gi-chart-col">
                         <h2 class="gi-section-title">Weekly Spending</h2>
                         <div class="chart-wrap">
-                            <canvas id="weekly-chart"></canvas>
+                            <canvas id="weekly-chart" role="img" aria-label="Bar chart showing daily energy spending for the past week"></canvas>
                         </div>
                     </div>
                     <div class="gi-insights-col">
@@ -167,13 +168,21 @@ class RecommendationsManager {
                     </div>
                 </div>
 
+                <div class="gi-section-d">
+                    <h3 class="gi-section-title">All-Time Spending Trend</h3>
+                    <div class="chart-wrap">
+                        <canvas id="trend-chart" role="img" aria-label="Line chart showing average daily spending over time"></canvas>
+                    </div>
+                </div>
+
                 ${tipsHtml}
 
                 ${bannerHtml}
             </div>
         `;
 
-        this._initChart(dayLabels, kwhValues);
+        this._initChart(dayLabels, costValues);
+        this._initTrendChart();
     }
 
     _initChart(labels, values) {
@@ -186,9 +195,8 @@ class RecommendationsManager {
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-        gradient.addColorStop(0, '#00e676');
-        gradient.addColorStop(1, '#00e67644');
+
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         this._chartInstance = new Chart(ctx, {
             type: 'bar',
@@ -217,11 +225,12 @@ class RecommendationsManager {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: { duration: reduceMotion ? 0 : undefined },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: (ctx) => `${ctx.raw} kWh`,
+                            label: (ctx) => `$${ctx.raw}`,
                         },
                     },
                 },
@@ -232,7 +241,7 @@ class RecommendationsManager {
                         ticks: {
                             color: '#888',
                             font: { size: 10 },
-                            callback: (v) => v + ' kWh',
+                            callback: (v) => '$' + v,
                         },
                     },
                     x: {
@@ -245,6 +254,86 @@ class RecommendationsManager {
                 },
             },
         });
+    }
+
+    async _initTrendChart() {
+        if (this._trendChartInstance) {
+            this._trendChartInstance.destroy();
+            this._trendChartInstance = null;
+        }
+
+        const canvas = document.getElementById('trend-chart');
+        if (!canvas) return;
+
+        try {
+            const data = await energyAPI.getGeneralTrend();
+            if (!data || !data.buckets || data.buckets.length === 0) return;
+
+            const labels = data.buckets.map(b => b.label);
+            const values = data.buckets.map(b => b.avg_cost);
+
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, '#00e67688');
+            gradient.addColorStop(1, '#00e67600');
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            this._trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        borderColor: '#00e676',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#00e676',
+                        pointBorderColor: '#0d0d1a',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: reduceMotion ? 0 : undefined },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const b = data.buckets[ctx.dataIndex];
+                                    return `$${b.avg_cost}/day avg (${b.num_days} days)`;
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.04)' },
+                            ticks: {
+                                color: '#888',
+                                font: { size: 10 },
+                                callback: (v) => '$' + v,
+                            },
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                color: '#888',
+                                font: { size: 10 },
+                            },
+                        },
+                    },
+                },
+            });
+        } catch (err) {
+            console.warn('Failed to load all-time trend:', err);
+        }
     }
 
     _renderApplianceRecs(recs) {

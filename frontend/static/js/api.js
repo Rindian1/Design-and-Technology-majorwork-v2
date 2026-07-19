@@ -68,6 +68,10 @@ class EnergyAPI {
         return this.request(`/api/recommendations/general/${date}/detailed`);
     }
 
+    async getGeneralTrend() {
+        return this.request('/api/recommendations/general/trend');
+    }
+
     async getBehaviourRecs(date) {
         return this.request(`/api/recommendations/behaviour/${date}`);
     }
