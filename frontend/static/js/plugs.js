@@ -1,0 +1,438 @@
+(function() {
+  'use strict';
+
+  const PLUGS_API = '/api/plugs';
+  let plugsState = [];
+  let credentialsOk = false;
+  let emailKnown = false;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!document.getElementById('plug-grid')) return;
+
+    fetchPlugs();
+    document.getElementById('add-plug-btn').addEventListener('click', openAddModal);
+    document.getElementById('add-plug-close').addEventListener('click', closeAddModal);
+    document.getElementById('add-plug-cancel').addEventListener('click', closeAddModal);
+    document.getElementById('add-plug-submit').addEventListener('click', submitAddPlug);
+    document.getElementById('tapo-password-toggle').addEventListener('click', togglePasswordVisibility);
+    document.querySelectorAll('.preset-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        document.getElementById('plug-name').value = tag.dataset.name;
+      });
+    });
+    document.getElementById('add-plug-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeAddModal();
+    });
+
+    document.getElementById('schedule-close').addEventListener('click', closeSchedule);
+    document.getElementById('schedule-cancel').addEventListener('click', closeSchedule);
+    document.getElementById('schedule-save').addEventListener('click', saveSchedule);
+    document.getElementById('schedule-fill-btn').addEventListener('click', fillRecommended);
+    document.getElementById('schedule-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeSchedule();
+    });
+
+    document.getElementById('password-close').addEventListener('click', closePasswordModal);
+    document.getElementById('password-cancel').addEventListener('click', closePasswordModal);
+    document.getElementById('password-submit').addEventListener('click', submitPasswordOnly);
+    document.getElementById('password-only-toggle').addEventListener('click', () => {
+      const input = document.getElementById('password-only-pass');
+      const btn = document.getElementById('password-only-toggle');
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      btn.textContent = isPassword ? '🙈' : '👁';
+    });
+    document.getElementById('password-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closePasswordModal();
+    });
+
+    window.addEventListener('tabChanged', (e) => {
+      if (e.detail.tab === 'plugs') fetchPlugs();
+    });
+  });
+
+  function togglePasswordVisibility() {
+    const input = document.getElementById('tapo-password');
+    const btn = document.getElementById('tapo-password-toggle');
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    btn.textContent = isPassword ? '🙈' : '👁';
+  }
+
+  async function fetchPlugs() {
+    try {
+      const res = await fetch(PLUGS_API);
+      if (!res.ok) {
+        if (res.status === 401) return;
+        throw new Error('Failed to fetch plugs');
+      }
+      const data = await res.json();
+      plugsState = data.plugs || [];
+      credentialsOk = data.credentials_ok;
+      emailKnown = data.email_known;
+      renderPlugs();
+    } catch (err) {
+      console.error('Error fetching plugs:', err);
+    }
+  }
+
+  function renderPlugs() {
+    const grid = document.getElementById('plug-grid');
+    const empty = document.getElementById('plug-empty');
+
+    if (!plugsState.length) {
+      empty.style.display = 'block';
+      grid.querySelectorAll('.plug-card').forEach(el => el.remove());
+      removeCredentialBanner();
+      return;
+    }
+
+    empty.style.display = 'none';
+    updateCredentialBanner();
+
+    const existing = new Set();
+    grid.querySelectorAll('.plug-card').forEach(el => existing.add(el.dataset.name));
+
+    const currentNames = new Set(plugsState.map(p => p.name));
+
+    grid.querySelectorAll('.plug-card').forEach(el => {
+      if (!currentNames.has(el.dataset.name)) el.remove();
+    });
+
+    plugsState.forEach(plug => {
+      if (existing.has(plug.name)) {
+        updateCard(plug);
+        return;
+      }
+      const card = createCard(plug);
+      grid.appendChild(card);
+    });
+  }
+
+  function updateCredentialBanner() {
+    const existing = document.querySelector('.creds-banner');
+    if (credentialsOk) {
+      if (existing) existing.remove();
+      return;
+    }
+    if (existing) return;
+
+    const banner = document.createElement('div');
+    banner.className = 'creds-banner';
+    if (emailKnown) {
+      banner.innerHTML = `
+        <span class="creds-banner-text">TAPO password required to control plugs.</span>
+        <button class="btn btn-primary creds-banner-btn" id="creds-reenter-btn">Enter Password</button>
+      `;
+    } else {
+      banner.innerHTML = `
+        <span class="creds-banner-text">TAPO account login required to control plugs.</span>
+        <button class="btn btn-primary creds-banner-btn" id="creds-reenter-btn">Enter Credentials</button>
+      `;
+    }
+    const grid = document.getElementById('plug-grid');
+    grid.parentNode.insertBefore(banner, grid);
+
+    document.getElementById('creds-reenter-btn').addEventListener('click', () => {
+      if (emailKnown) {
+        openPasswordOnlyModal();
+      } else {
+        openAddModal();
+      }
+    });
+  }
+
+  function removeCredentialBanner() {
+    const existing = document.querySelector('.creds-banner');
+    if (existing) existing.remove();
+  }
+
+  function createCard(plug) {
+    const card = document.createElement('div');
+    card.className = 'plug-card';
+    card.dataset.name = plug.name;
+
+    const isOn = plug.status === true;
+    const isOff = plug.status === false;
+    const isUnknown = plug.status === null || plug.status === undefined;
+
+    card.innerHTML = `
+      <div class="plug-card-left">
+        <svg class="plug-icon" width="40" height="40" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="14" y="4" width="20" height="28" rx="3"/>
+          <rect x="18" y="32" width="4" height="6" rx="1"/>
+          <rect x="26" y="32" width="4" height="6" rx="1"/>
+          <rect x="14" y="40" width="20" height="4" rx="1"/>
+          <line x1="17" y1="12" x2="17" y2="20"/>
+          <line x1="31" y1="12" x2="31" y2="20"/>
+          <line x1="20" y1="14" x2="28" y2="14"/>
+          <line x1="20" y1="18" x2="28" y2="18"/>
+        </svg>
+      </div>
+      <div class="plug-card-right">
+        <div class="plug-name">${escapeHtml(plug.name)}</div>
+        <div class="plug-controls">
+          <label class="plug-toggle ${isOn ? 'on' : ''} ${isOff ? 'off' : ''}">
+            <input type="checkbox" ${isOn ? 'checked' : ''} ${isUnknown ? 'disabled' : ''} data-name="${escapeHtml(plug.name)}">
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">${isOn ? 'On' : isOff ? 'Off' : 'Offline'}</span>
+          </label>
+          <button class="plug-schedule-btn" data-name="${escapeHtml(plug.name)}" title="Schedule" aria-label="Schedule">⏰</button>
+        </div>
+      </div>
+    `;
+
+    const toggleInput = card.querySelector('input[type="checkbox"]');
+    toggleInput.addEventListener('change', () => togglePlug(toggleInput.dataset.name, toggleInput));
+
+    const scheduleBtn = card.querySelector('.plug-schedule-btn');
+    scheduleBtn.addEventListener('click', () => openSchedule(plug.name));
+
+    return card;
+  }
+
+  function updateCard(plug) {
+    const card = document.querySelector(`.plug-card[data-name="${CSS.escape(plug.name)}"]`);
+    if (!card) return;
+
+    const isOn = plug.status === true;
+    const isOff = plug.status === false;
+    const isUnknown = plug.status === null || plug.status === undefined;
+
+    const toggle = card.querySelector('.plug-toggle');
+    toggle.className = `plug-toggle ${isOn ? 'on' : ''} ${isOff ? 'off' : ''}`;
+
+    const input = card.querySelector('input[type="checkbox"]');
+    input.checked = isOn;
+    input.disabled = isUnknown;
+
+    const label = card.querySelector('.toggle-label');
+    label.textContent = isOn ? 'On' : isOff ? 'Off' : 'Offline';
+
+    const scheduleBtn = card.querySelector('.plug-schedule-btn');
+    scheduleBtn.dataset.name = plug.name;
+  }
+
+  async function togglePlug(name, input) {
+    const card = document.querySelector(`.plug-card[data-name="${CSS.escape(name)}"]`);
+    const toggle = card.querySelector('.plug-toggle');
+    toggle.className = 'plug-toggle';
+    const label = card.querySelector('.toggle-label');
+    label.textContent = '...';
+    input.disabled = true;
+
+    try {
+      const res = await fetch(`${PLUGS_API}/${encodeURIComponent(name)}/toggle`, { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Toggle failed');
+      }
+      const data = await res.json();
+      const plug = plugsState.find(p => p.name === name);
+      if (plug) plug.status = data.status;
+      updateCard(plug || { name, status: data.status });
+      if (input.checked !== data.status) input.checked = data.status;
+    } catch (err) {
+      console.error('Toggle error:', err);
+      input.checked = !input.checked;
+      input.disabled = false;
+      const plug = plugsState.find(p => p.name === name);
+      if (plug) updateCard(plug);
+      else {
+        toggle.className = 'plug-toggle off';
+        label.textContent = 'Offline';
+      }
+    }
+  }
+
+  function openSchedule(plugName) {
+    document.getElementById('schedule-plug-name').textContent = plugName;
+    loadSchedule(plugName);
+    document.getElementById('schedule-modal').classList.remove('hidden');
+  }
+
+  function closeSchedule() {
+    document.getElementById('schedule-modal').classList.add('hidden');
+  }
+
+  async function loadSchedule(plugName) {
+    try {
+      const res = await fetch(`/api/plugs/${encodeURIComponent(plugName)}/schedule`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data.time_on) document.getElementById('schedule-time-on').value = data.time_on;
+      if (data.time_off) document.getElementById('schedule-time-off').value = data.time_off;
+      document.getElementById('schedule-rec-on').textContent = data.suggested_on || '--:--';
+      document.getElementById('schedule-rec-off').textContent = data.suggested_off || '--:--';
+    } catch (err) {
+      console.error('Error loading schedule:', err);
+    }
+  }
+
+  async function saveSchedule() {
+    const name = document.getElementById('schedule-plug-name').textContent;
+    const time_on = document.getElementById('schedule-time-on').value;
+    const time_off = document.getElementById('schedule-time-off').value;
+
+    try {
+      const res = await fetch(`/api/plugs/${encodeURIComponent(name)}/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ time_on, time_off }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Failed to save schedule');
+        return;
+      }
+      closeSchedule();
+    } catch (err) {
+      alert('Failed to save schedule: ' + err.message);
+    }
+  }
+
+  function fillRecommended() {
+    const recOn = document.getElementById('schedule-rec-on').textContent;
+    const recOff = document.getElementById('schedule-rec-off').textContent;
+    if (recOn && recOn !== '--:--') document.getElementById('schedule-time-on').value = recOn;
+    if (recOff && recOff !== '--:--') document.getElementById('schedule-time-off').value = recOff;
+  }
+
+  function openPasswordOnlyModal() {
+    document.getElementById('password-only-email').value = '';
+    document.getElementById('password-only-pass').value = '';
+
+    fetch('/api/plugs/credentials').then(r => r.json()).then(data => {
+      if (data.email) document.getElementById('password-only-email').value = data.email;
+    }).catch(() => {});
+
+    document.getElementById('password-modal').classList.remove('hidden');
+  }
+
+  function closePasswordModal() {
+    document.getElementById('password-modal').classList.add('hidden');
+    document.getElementById('password-only-pass').type = 'password';
+    document.getElementById('password-only-toggle').textContent = '👁';
+  }
+
+  async function submitPasswordOnly() {
+    const email = document.getElementById('password-only-email').value.trim();
+    const password = document.getElementById('password-only-pass').value;
+
+    if (!email || !password) {
+      alert('Please enter both email and password.');
+      return;
+    }
+
+    const btn = document.getElementById('password-submit');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+      const res = await fetch('/api/plugs/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to save credentials');
+        btn.disabled = false;
+        btn.textContent = 'Save';
+        return;
+      }
+      closePasswordModal();
+      await fetchPlugs();
+    } catch (err) {
+      alert('Failed to save: ' + err.message);
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+
+  function openAddModal() {
+    loadCredentials();
+    document.getElementById('add-plug-modal').classList.remove('hidden');
+  }
+
+  function closeAddModal() {
+    document.getElementById('add-plug-modal').classList.add('hidden');
+    document.getElementById('tapo-password').type = 'password';
+    document.getElementById('tapo-password-toggle').textContent = '👁';
+  }
+
+  async function loadCredentials() {
+    try {
+      const res = await fetch('/api/plugs/credentials');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.email) {
+          document.getElementById('tapo-email').value = data.email;
+        }
+      }
+    } catch (err) {
+      console.error('Error loading credentials:', err);
+    }
+  }
+
+  async function submitAddPlug() {
+    const email = document.getElementById('tapo-email').value.trim();
+    const password = document.getElementById('tapo-password').value;
+    const ip = document.getElementById('plug-ip').value.trim();
+    const model = document.getElementById('plug-model').value.trim();
+    const name = document.getElementById('plug-name').value.trim();
+
+    if (!email || !password) {
+      alert('Please enter your TAPO account email and password.');
+      return;
+    }
+    if (!ip) {
+      alert('Please enter the plug IP address.');
+      return;
+    }
+    if (!name) {
+      alert('Please enter a name for the plug.');
+      return;
+    }
+
+    const submitBtn = document.getElementById('add-plug-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
+
+    try {
+      const res = await fetch(PLUGS_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, ip_address: ip, model, name }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Failed to add plug');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Add';
+        return;
+      }
+
+      closeAddModal();
+      document.getElementById('plug-ip').value = '';
+      document.getElementById('plug-model').value = '';
+      document.getElementById('plug-name').value = '';
+      await fetchPlugs();
+    } catch (err) {
+      alert('Failed to add plug: ' + err.message);
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Add';
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();

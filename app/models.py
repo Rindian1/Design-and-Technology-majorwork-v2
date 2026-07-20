@@ -1,9 +1,8 @@
 from sqlalchemy import (
     Column, Integer, Float, DateTime, Date, Text, String, Boolean,
-    create_engine, UniqueConstraint, Index, ForeignKey
+    create_engine, UniqueConstraint, Index, ForeignKey, func, text
 )
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
-from sqlalchemy import func
 
 from config import HEATING_DB_PATH
 
@@ -183,6 +182,44 @@ class DailyTotal(Base):
         }
 
 
+class UserPlug(Base):
+    __tablename__ = 'user_plugs'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(Text, nullable=False)
+    ip_address = Column(Text, nullable=False)
+    model = Column(Text, nullable=True)
+    user_id = Column(Integer, nullable=False)
+    time_on = Column(Text, nullable=True)
+    time_off = Column(Text, nullable=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'ip_address': self.ip_address,
+            'model': self.model,
+            'user_id': self.user_id,
+            'time_on': self.time_on,
+            'time_off': self.time_off,
+        }
+
+
+class TapoCredentials(Base):
+    __tablename__ = 'tapo_credentials'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, unique=True, nullable=False)
+    email = Column(Text, nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'email': self.email,
+        }
+
+
 class DatabaseSession:
     def __init__(self, db_path: str):
         self.engine = create_engine(f'sqlite:///{db_path}')
@@ -190,6 +227,17 @@ class DatabaseSession:
 
     def create_tables(self):
         Base.metadata.create_all(bind=self.engine)
+        self._migrate()
+
+    def _migrate(self):
+        with self.engine.connect() as conn:
+            conn.execute(text("PRAGMA journal_mode=WAL"))
+            for col in ('time_on', 'time_off'):
+                try:
+                    conn.execute(text(f"ALTER TABLE user_plugs ADD COLUMN {col} TEXT"))
+                except Exception:
+                    pass
+            conn.commit()
 
     def get_session(self):
         return self.SessionLocal()

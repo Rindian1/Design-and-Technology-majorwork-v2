@@ -32,4 +32,7 @@ def create_app():
     from app.auth import auth_bp
     app.register_blueprint(auth_bp)
 
+    from app.plug_routes import plug_bp
+    app.register_blueprint(plug_bp)
+
     return app

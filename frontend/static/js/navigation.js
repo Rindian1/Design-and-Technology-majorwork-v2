@@ -299,6 +299,11 @@ class NavigationManager {
         this.updateURL();
         
         // Trigger tab change event
+        const dateSelector = document.querySelector('.date-selector');
+        if (dateSelector) {
+            dateSelector.style.display = tabName === 'plugs' ? 'none' : '';
+        }
+
         window.dispatchEvent(new CustomEvent('tabChanged', { 
             detail: { tab: this.currentTab } 
         }));
@@ -364,6 +369,12 @@ class NavigationManager {
             panel.classList.toggle('active', isActive);
             panel.hidden = !isActive;
         });
+
+        // Hide date selector on plugs tab
+        const dateSelector = document.querySelector('.date-selector');
+        if (dateSelector) {
+            dateSelector.style.display = this.currentTab === 'plugs' ? 'none' : '';
+        }
     }
 
     /**
@@ -378,7 +389,7 @@ class NavigationManager {
         }
         
         const tabParam = params.get('tab');
-        if (tabParam && ['graph', 'general', 'appliance', 'goals'].includes(tabParam)) {
+        if (tabParam && ['graph', 'general', 'appliance', 'goals', 'plugs'].includes(tabParam)) {
             this.currentTab = tabParam;
         }
     }

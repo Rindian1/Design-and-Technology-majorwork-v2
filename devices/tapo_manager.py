@@ -233,6 +233,39 @@ class TapoPlugManager:
             results[plug_name] = power
         return results
 
+    async def turn_on(self, plug_name):
+        if plug_name not in self.devices:
+            raise ValueError(f"Plug '{plug_name}' not found")
+        try:
+            device = self.devices[plug_name]['device']
+            await device.on()
+            return True
+        except Exception as e:
+            print(f"Error turning on '{plug_name}': {e}")
+            return False
+
+    async def turn_off(self, plug_name):
+        if plug_name not in self.devices:
+            raise ValueError(f"Plug '{plug_name}' not found")
+        try:
+            device = self.devices[plug_name]['device']
+            await device.off()
+            return True
+        except Exception as e:
+            print(f"Error turning off '{plug_name}': {e}")
+            return False
+
+    async def get_status(self, plug_name):
+        if plug_name not in self.devices:
+            raise ValueError(f"Plug '{plug_name}' not found")
+        try:
+            device = self.devices[plug_name]['device']
+            info = await device.get_device_info()
+            return info.device_on
+        except Exception as e:
+            print(f"Error getting status for '{plug_name}': {e}")
+            return None
+
     def calculate_cost_increment(self, watts, seconds_elapsed):
         rate_per_kwh_dollars = self.electricity_rate_cents_per_kwh / 100
         kw = watts / 1000
