@@ -1,1 +1,7 @@
-Adding a new page whoch will allow the user to control their Tapo plugs through the app, by
+Adding a new page whoch will allow the user to control their Tapo plugs through the app, by simply clicking abutton. There should also be a smart scehduler, where the app suggests the user to turn it off automatically when the usage is historically relatively low, and turn it on when usage is histroicaly relatively high. 
+
+1) Should make use of TAPO API. THe user should be able to connect their smart plug through the interface, so that they can use their own plug effectively with the app. They should be able to name the appliance from either typing OR suggestions (buttons which allow users to quickly put in names such as 'heater', 'fridge', 'LED lights' e.t.c.) In the previous project folder of version 1 of this project there is a lot of working code on the TAPO implementation.
+2) UI should be simple and easy to work through, and be able to support multiple different plugs.  
+   1) Main page, where all plugs can be viewed. Cards in a 2 column grid. Each plug should have a name and a on/off swithc, along with a clock icon as the button for smart cheduling 
+   2) Add plug button, which requests for all nescesarry user input, such as user email, password, wifi name and password, and also the user's specific plug information (IP address, model type, and plug name). 
+    3) Smart scheduler should be based on users actual historical usage, should not be hard coded. 
