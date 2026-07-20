@@ -1,0 +1,131 @@
+<div class="plugs-header">
+  <h1 class="plugs-title">Plugs</h1>
+  <button class="btn btn-primary" id="add-plug-btn">Add Plugs</button>
+</div>
+
+<div class="plug-grid" id="plug-grid">
+  <p class="plug-empty" id="plug-empty">No plugs added yet. Click "Add Plugs" to get started.</p>
+</div>
+
+<div id="password-modal" class="modal-overlay hidden">
+  <div class="modal-form" style="max-width:360px">
+    <div class="modal-form-header">
+      <h2>Enter TAPO Password</h2>
+      <button class="modal-close-btn" id="password-close">&times;</button>
+    </div>
+    <div class="modal-form-body">
+      <p style="font-size:13px;color:var(--text-pale);margin-bottom:12px;line-height:1.5">
+        Your TAPO credentials were lost after the server restarted. Enter your password to regain control of your plugs.
+      </p>
+      <div class="form-group">
+        <label for="password-only-email">Email</label>
+        <input type="email" id="password-only-email" class="form-input" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password-only-pass">Password</label>
+        <div class="password-wrap">
+          <input type="password" id="password-only-pass" class="form-input" placeholder="TAPO account password" autocomplete="off">
+          <button class="eye-btn" id="password-only-toggle" type="button" aria-label="Toggle password visibility">👁</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-form-footer">
+      <button class="btn btn-secondary" id="password-cancel">Cancel</button>
+      <button class="btn btn-primary" id="password-submit">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="add-plug-modal" class="modal-overlay hidden">
+  <div class="modal-form">
+    <div class="modal-form-header">
+      <h2>Add Plugs</h2>
+      <button class="modal-close-btn" id="add-plug-close">&times;</button>
+    </div>
+
+    <div class="modal-form-body">
+      <div class="form-section">
+        <h3 class="form-section-title">TAPO ACCOUNT INFO</h3>
+        <div class="form-group">
+          <label for="tapo-email">Email</label>
+          <input type="email" id="tapo-email" class="form-input" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="tapo-password">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="tapo-password" class="form-input" placeholder="TAPO account password" autocomplete="off">
+            <button class="eye-btn" id="tapo-password-toggle" type="button" aria-label="Toggle password visibility">👁</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3 class="form-section-title">PLUG INFO</h3>
+        <div class="form-group">
+          <label for="plug-ip">IP address</label>
+          <input type="text" id="plug-ip" class="form-input" placeholder="xxx.xxx.x.xxx" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="plug-model">Model</label>
+          <input type="text" id="plug-model" class="form-input" placeholder="e.g. P110" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="plug-name">Plug name</label>
+          <input type="text" id="plug-name" class="form-input" placeholder="e.g. Heater" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="preset-tags">
+        <button class="preset-tag" data-name="Heater">Heater</button>
+        <button class="preset-tag" data-name="Fridge">Fridge</button>
+        <button class="preset-tag" data-name="Light">Light</button>
+      </div>
+    </div>
+
+    <div class="modal-form-footer">
+      <button class="btn btn-secondary" id="add-plug-cancel">Cancel</button>
+      <button class="btn btn-primary" id="add-plug-submit">Add</button>
+    </div>
+  </div>
+</div>
+
+<div id="schedule-modal" class="modal-overlay hidden">
+  <div class="modal-form schedule-modal-form">
+    <div class="modal-form-header">
+      <h2>Schedule — <span id="schedule-plug-name"></span></h2>
+      <button class="modal-close-btn" id="schedule-close">&times;</button>
+    </div>
+
+    <div class="modal-form-body schedule-body">
+      <div class="schedule-columns">
+        <div class="schedule-col">
+          <label class="schedule-col-label">Time on</label>
+          <div class="schedule-time-row">
+            <input type="time" id="schedule-time-on" class="form-input schedule-time-input" value="06:00">
+          </div>
+          <div class="schedule-recommended">
+            <span class="schedule-rec-label">Recommended</span>
+            <span class="schedule-rec-value" id="schedule-rec-on">--:--</span>
+          </div>
+        </div>
+        <div class="schedule-col">
+          <label class="schedule-col-label">Time off</label>
+          <div class="schedule-time-row">
+            <input type="time" id="schedule-time-off" class="form-input schedule-time-input" value="22:00">
+          </div>
+          <div class="schedule-recommended">
+            <span class="schedule-rec-label">Recommended</span>
+            <span class="schedule-rec-value" id="schedule-rec-off">--:--</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary schedule-fill-btn" id="schedule-fill-btn">Apply Recommended Times</button>
+    </div>
+
+    <div class="modal-form-footer">
+      <button class="btn btn-secondary" id="schedule-cancel">Cancel</button>
+      <button class="btn btn-primary" id="schedule-save">Save</button>
+    </div>
+  </div>
+</div>
