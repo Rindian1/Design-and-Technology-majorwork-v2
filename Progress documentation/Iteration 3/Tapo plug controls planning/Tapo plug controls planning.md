@@ -1,0 +1,1 @@
+Adding a new page whoch will allow the user to control their Tapo plugs through the app, by
