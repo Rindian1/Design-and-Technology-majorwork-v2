@@ -16,6 +16,8 @@ class EnergyDashboard {
   }
 
   async initialize() {
+    this.setupThemeToggle();
+
     const authPages = ['/login', '/register', '/survey'];
     if (authPages.includes(window.location.pathname)) {
       return;
@@ -148,6 +150,26 @@ class EnergyDashboard {
     });
     window.addEventListener('error', (e) => {
       console.error('JavaScript error:', e.error);
+    });
+  }
+
+  setupThemeToggle() {
+    const btn = document.getElementById('theme-toggle-btn');
+    if (!btn) return;
+
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') {
+      document.documentElement.classList.add('light-mode');
+      btn.textContent = 'Dark Mode';
+    } else {
+      btn.textContent = 'Light Mode';
+    }
+
+    btn.addEventListener('click', () => {
+      const isLight = !document.documentElement.classList.contains('light-mode');
+      document.documentElement.classList.toggle('light-mode', isLight);
+      btn.textContent = isLight ? 'Dark Mode' : 'Light Mode';
+      localStorage.setItem('theme', isLight ? 'light' : 'dark');
     });
   }
 }
