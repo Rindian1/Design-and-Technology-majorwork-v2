@@ -62,8 +62,10 @@ class GaugeManager {
   setCentre(cost, totalKwh) {
     const vEl = document.getElementById('gauge-value');
     const cEl = document.getElementById('gauge-cost');
+    const bEl = document.getElementById('gauge-budget');
     if (vEl) vEl.textContent = `$${cost.toFixed(2)}`;
     if (cEl) cEl.textContent = `${totalKwh.toFixed(1)} kWh`;
+    if (bEl) bEl.textContent = `Out of $${(this.budgetKwh * this.ratePerKwh).toFixed(2)}`;
   }
 
   setMiniStats(totalKwh, peakKw, avgKw, cost) {

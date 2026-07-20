@@ -113,7 +113,7 @@ body {
 .gauge-wrapper {
   position: relative;
   width: 100%;
-  max-width: 340px;
+  max-width: 360px;
   margin: 0 auto;
 }
 .gauge-wrapper svg { display: block; width: 100%; height: auto; }
@@ -170,6 +170,11 @@ body {
   font-weight: 600;
   color: var(--text-soft);
   margin-top: 1px;
+}
+.gauge-budget {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
 }
 
 /* ── Chart Section (home page, below dial) ── */
