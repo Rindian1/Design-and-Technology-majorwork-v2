@@ -1,6 +1,11 @@
 (function() {
   'use strict';
 
+  const SMART_FEATURES = new Set([
+    'forecasted_monthly', 'savings_scenarios', 'alltime_trend',
+    'est_annual_cost', 'payback_period', 'appliance_recs', 'general_insights'
+  ]);
+
   const INFO_DEFS = {
     kw: {
       term: 'kW (kilowatt)',
@@ -81,37 +86,46 @@
   };
 
   function infoIcon(key) {
-    return '<span class="info-trigger" data-info-key="' + key + '" tabindex="0" role="button" aria-label="More info about this term">\u24D8</span>';
+    var cls = SMART_FEATURES.has(key) ? 'info-trigger info-trigger-smart' : 'info-trigger';
+    return '<span class="' + cls + '" data-info-key="' + key + '" tabindex="0" role="button" aria-label="More info about this term">\u24D8</span>';
   }
 
-  let activePopup = null;
+  var activePopup = null;
 
-  function togglePopup(trigger) {
+  function closePopup() {
     if (activePopup) {
       activePopup.remove();
       activePopup = null;
     }
+  }
 
-    const key = trigger.dataset.infoKey;
-    const def = INFO_DEFS[key];
+  function togglePopup(trigger) {
+    closePopup();
+
+    var key = trigger.dataset.infoKey;
+    var def = INFO_DEFS[key];
     if (!def) return;
 
-    const popup = document.createElement('div');
-    popup.className = 'info-popup';
-    popup.innerHTML = '<div class="info-popup-term">' + def.term + '</div>' +
+    var isSmart = SMART_FEATURES.has(key);
+    var tagHtml = isSmart ? '<div class="info-popup-tag">Smart Feature</div>' : '';
+
+    var popup = document.createElement('div');
+    popup.className = 'info-popup' + (isSmart ? ' info-popup-smart' : '');
+    popup.innerHTML = tagHtml +
+                      '<div class="info-popup-term">' + def.term + '</div>' +
                       '<div class="info-popup-def">' + def.definition + '</div>';
     document.body.appendChild(popup);
 
-    const rect = trigger.getBoundingClientRect();
-    let top = rect.bottom + 8;
-    let left = rect.left;
+    var rect = trigger.getBoundingClientRect();
+    var top = rect.bottom + 8;
+    var left = rect.left;
 
     popup.style.position = 'absolute';
     popup.style.top = top + 'px';
     popup.style.left = left + 'px';
 
-    requestAnimationFrame(() => {
-      const pRect = popup.getBoundingClientRect();
+    requestAnimationFrame(function() {
+      var pRect = popup.getBoundingClientRect();
       if (pRect.right > window.innerWidth - 12) {
         left = window.innerWidth - pRect.width - 12;
         popup.style.left = left + 'px';
@@ -129,12 +143,11 @@
   }
 
   document.addEventListener('click', function(e) {
-    const trigger = e.target.closest('.info-trigger');
+    var trigger = e.target.closest('.info-trigger');
     if (trigger) {
       e.stopPropagation();
       if (activePopup && activePopup._trigger === trigger) {
-        activePopup.remove();
-        activePopup = null;
+        closePopup();
         return;
       }
       togglePopup(trigger);
@@ -142,10 +155,11 @@
       return;
     }
     if (activePopup && !e.target.closest('.info-popup')) {
-      activePopup.remove();
-      activePopup = null;
+      closePopup();
     }
   });
+
+  window.addEventListener('scroll', closePopup, { passive: true });
 
   window.INFO = { defs: INFO_DEFS, icon: infoIcon };
 })();
