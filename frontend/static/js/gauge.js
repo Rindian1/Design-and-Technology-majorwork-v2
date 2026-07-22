@@ -64,23 +64,23 @@ class GaugeManager {
     const cEl = document.getElementById('gauge-cost');
     const bEl = document.getElementById('gauge-budget');
     if (vEl) vEl.textContent = `$${cost.toFixed(2)}`;
-    if (cEl) cEl.textContent = `${totalKwh.toFixed(1)} kWh`;
+    if (cEl) cEl.innerHTML = `${totalKwh.toFixed(1)} kWh${INFO.icon('kwh')}`;
     if (bEl) bEl.textContent = `Out of $${(this.budgetKwh * this.ratePerKwh).toFixed(2)}`;
   }
 
   setMiniStats(totalKwh, peakKw, avgKw, cost) {
-    const set = (id, v, suffix) => {
+    const set = (id, v, suffix, infoKey) => {
       const el = document.getElementById(id);
       if (!el) return;
       if (v === null || v === undefined) {
         el.innerHTML = '--';
       } else {
-        el.innerHTML = `${v.toFixed(1)} <small>${suffix || ''}</small>`;
+        el.innerHTML = `${v.toFixed(1)} <small>${suffix || ''}</small>${infoKey ? INFO.icon(infoKey) : ''}`;
       }
     };
-    set('stat-total', totalKwh, 'kWh');
-    set('stat-peak', peakKw, 'kW');
-    set('stat-avg', avgKw, 'kW');
+    set('stat-total', totalKwh, 'kWh', 'kwh');
+    set('stat-peak', peakKw, 'kW', 'kw');
+    set('stat-avg', avgKw, 'kW', 'kw');
     const costEl = document.getElementById('stat-cost');
     if (!costEl) return;
     if (cost === null || cost === undefined) {
@@ -114,11 +114,11 @@ class GaugeManager {
   _buildLegendItems() {
     const fmt = (ranges) => ranges.map(r => this._formatTimeRange(r)).join(', ');
     const items = [];
-    if (this.peakHours.length) items.push({ cls: 'peak', label: 'Peak (' + fmt(this.peakHours) + ')' });
-    if (this.shoulderHours.length) items.push({ cls: 'shoulder', label: 'Shoulder (' + fmt(this.shoulderHours) + ')' });
-    if (this.offpeakHours.length) items.push({ cls: 'off', label: 'Off-Peak (' + fmt(this.offpeakHours) + ')' });
+    if (this.peakHours.length) items.push({ cls: 'peak', label: 'Peak (' + fmt(this.peakHours) + ')' + INFO.icon('peak') });
+    if (this.shoulderHours.length) items.push({ cls: 'shoulder', label: 'Shoulder (' + fmt(this.shoulderHours) + ')' + INFO.icon('shoulder') });
+    if (this.offpeakHours.length) items.push({ cls: 'off', label: 'Off-Peak (' + fmt(this.offpeakHours) + ')' + INFO.icon('offpeak') });
     if (!this.peakHours.length && !this.shoulderHours.length) {
-      items.push({ cls: 'off', label: 'Flat Rate' });
+      items.push({ cls: 'off', label: 'Flat Rate' + INFO.icon('flatrate') });
     }
     return items;
   }

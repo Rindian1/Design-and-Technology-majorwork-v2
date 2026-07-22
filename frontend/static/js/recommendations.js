@@ -72,10 +72,10 @@ class RecommendationsManager {
                 <div class="insight-module-title">Today was lower than this time last week</div>
                 <div class="insight-metrics">
                     <span class="metric metric-green">${vsLastWeek.diff_pct}% decrease</span>
-                    <span class="metric metric-green">${vsLastWeek.diff_kwh} kWh saved</span>
+                    <span class="metric metric-green">${vsLastWeek.diff_kwh} kWh${INFO.icon('kwh')} saved</span>
                     <span class="metric metric-green">$${vsLastWeek.savings} saved</span>
                 </div>
-                <div class="insight-baseline">Baseline: ${vsLastWeek.baseline_kwh} kWh (last week)</div>
+                <div class="insight-baseline">Baseline: ${vsLastWeek.baseline_kwh} kWh${INFO.icon('kwh')} (last week)</div>
             </div>
         ` : '';
 
@@ -85,7 +85,7 @@ class RecommendationsManager {
                 <div class="insight-metrics">
                     <span class="metric metric-red">${vsAvg.diff_pct}% above average</span>
                 </div>
-                <div class="insight-baseline">7-day average: ${vsAvg.avg_kwh} kWh</div>
+                <div class="insight-baseline">7-day average: ${vsAvg.avg_kwh} kWh${INFO.icon('kwh')}</div>
             </div>
         ` : '';
 
@@ -115,11 +115,11 @@ class RecommendationsManager {
 
         this._generalContainer.innerHTML = `
             <div class="general-insights">
-                <h1 class="gi-title">General Insights</h1>
+                <h1 class="gi-title"><span class="info-heading">General Insights${INFO.icon('general_insights')}</span></h1>
 
                 <div class="gi-section-a">
                     <div class="gi-chart-col">
-                        <h2 class="gi-section-title">Weekly Spending</h2>
+                        <h2 class="gi-section-title"><span class="info-heading">Weekly Spending${INFO.icon('weekly_spending')}</span></h2>
                         <div class="chart-wrap">
                             <canvas id="weekly-chart" role="img" aria-label="Bar chart showing daily energy spending for the past week"></canvas>
                         </div>
@@ -142,13 +142,13 @@ class RecommendationsManager {
                         <span class="gi-stat-value">$${data.avg_weekly_spend || '0.00'}</span>
                     </div>
                     <div class="gi-stat-card">
-                        <span class="gi-stat-label">Forecasted Monthly Bill</span>
+                        <span class="gi-stat-label">Forecasted Monthly Bill${INFO.icon('forecasted_monthly')}</span>
                         <span class="gi-stat-value">$${data.forecasted_monthly || '0.00'}</span>
                     </div>
                 </div>
 
                 <div class="gi-section-c">
-                    <h3 class="gi-section-title">Savings in monthly bill if appliance usage is reduced by:</h3>
+                    <h3 class="gi-section-title"><span class="info-heading">Savings in monthly bill if appliance usage is reduced by:${INFO.icon('savings_scenarios')}</span></h3>
                     <div class="gi-scenarios">
                         <div class="gi-scenario-card">
                             <span class="gi-scenario-pct">2%</span>
@@ -169,7 +169,7 @@ class RecommendationsManager {
                 </div>
 
                 <div class="gi-section-d">
-                    <h3 class="gi-section-title">All-Time Spending Trend</h3>
+                    <h3 class="gi-section-title"><span class="info-heading">All-Time Spending Trend${INFO.icon('alltime_trend')}</span></h3>
                     <div class="chart-wrap">
                         <canvas id="trend-chart" role="img" aria-label="Line chart showing average daily spending over time"></canvas>
                     </div>
@@ -345,7 +345,7 @@ class RecommendationsManager {
         const sorted = [...recs].sort((a, b) => (b.estimated_annual_savings_dollars || 0) - (a.estimated_annual_savings_dollars || 0));
         const cards = sorted.map(r => this._createApplianceCard(r)).join('');
 
-        this._applianceContainer.innerHTML = `<div class="recs-appliance-list">${cards}</div>`;
+        this._applianceContainer.innerHTML = `<h2 class="gi-section-title" style="margin-bottom:12px"><span class="info-heading">Appliance Specific Recommendations${INFO.icon('appliance_recs')}</span></h2><div class="recs-appliance-list">${cards}</div>`;
     }
 
     _createApplianceCard(rec) {
@@ -364,19 +364,19 @@ class RecommendationsManager {
                         <span class="spec-value">${this._escapeHtml(rec.brand || '\u2014')}</span>
                     </div>
                     <div class="spec-item">
-                        <span class="spec-label">Power rating</span>
+                        <span class="spec-label">Power rating${INFO.icon('power_rating')}</span>
                         <span class="spec-value">${rec.power_rating_watts || '\u2014'} W</span>
                     </div>
                     <div class="spec-item">
-                        <span class="spec-label">Est. annual usage</span>
-                        <span class="spec-value">${rec.estimated_annual_kwh || '\u2014'} kWh</span>
+                        <span class="spec-label">Est. annual usage${INFO.icon('est_annual_usage')}</span>
+                        <span class="spec-value">${rec.estimated_annual_kwh || '\u2014'} kWh${INFO.icon('kwh')}</span>
                     </div>
                     <div class="spec-item">
                         <span class="spec-label">Current annual cost</span>
                         <span class="spec-value">$${rec.current_annual_cost_dollars || '\u2014'}</span>
                     </div>
                     <div class="spec-item highlight">
-                        <span class="spec-label">Est. annual cost</span>
+                        <span class="spec-label">Est. annual cost${INFO.icon('est_annual_cost')}</span>
                         <span class="spec-value">$${rec.estimated_annual_cost_dollars || '\u2014'}</span>
                     </div>
                     <div class="spec-item highlight">
@@ -388,7 +388,7 @@ class RecommendationsManager {
                         <span class="spec-value">$${rec.estimated_retail_price_aud || '\u2014'}</span>
                     </div>
                     <div class="spec-item">
-                        <span class="spec-label">Payback period</span>
+                        <span class="spec-label">Payback period${INFO.icon('payback_period')}</span>
                         <span class="spec-value">${rec.payback_period_years || '\u2014'} years</span>
                     </div>
                 </div>
