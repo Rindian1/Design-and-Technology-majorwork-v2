@@ -1,5 +1,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+.hidden { display: none !important; }
+
 :focus-visible {
   outline: 2px solid #00e676;
   outline-offset: 2px;
@@ -333,7 +335,7 @@ body {
   z-index: 1000;
   backdrop-filter: blur(4px);
 }
-.loading-overlay.hidden { display: none; }
+/* .loading-overlay toggled via .hidden utility class */
 .loading-spinner {
   width: 40px; height: 40px;
   border: 3px solid rgba(255,255,255,0.08);
@@ -356,7 +358,7 @@ body {
   z-index: 1001;
   backdrop-filter: blur(4px);
 }
-.modal.hidden { display: none; }
+/* .modal toggled via .hidden utility class */
 .modal-content {
   background: #1a1a2e;
   border-radius: 16px;
@@ -1369,7 +1371,7 @@ body {
 .plug-icon {
   color: var(--text-muted);
 }
-.plug-card-right {
+.plug-card-right, .plug-card-body {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1459,6 +1461,87 @@ body {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
+/* ── Plug Stat (cost per hour + current watts) ── */
+.plug-stats {
+  flex-shrink: 0;
+  text-align: right;
+  min-width: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.plug-stat {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.plug-stat.dim {
+  color: var(--text-dim);
+}
+.plug-stat-sub {
+  font-size: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.plug-stat-sub.dim {
+  color: var(--text-dim);
+}
+/* ── Three-dot Menu ── */
+.plug-menu-wrap {
+  position: relative;
+}
+.plug-menu-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  transition: all 0.2s;
+  letter-spacing: 0;
+}
+.plug-menu-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.plug-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--bg-dropdown);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  min-width: 100px;
+  z-index: 50;
+  overflow: hidden;
+}
+.plug-menu-dropdown button {
+  width: 100%;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  color: var(--text-body);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.plug-menu-dropdown button:hover {
+  background: var(--bg-hover);
+}
+.plug-menu-dropdown .plug-menu-remove {
+  color: var(--danger);
+}
 /* ── Add Plug Modal ── */
 .modal-overlay {
   position: fixed;
@@ -1470,7 +1553,7 @@ body {
   z-index: 1001;
   backdrop-filter: blur(4px);
 }
-.modal-overlay.hidden { display: none; }
+/* .modal-overlay toggled via .hidden utility class */
 .modal-form {
   background: var(--bg-dropdown);
   border: 1px solid var(--border-soft);
@@ -1479,6 +1562,9 @@ body {
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
+}
+.modal-form-wide {
+  max-width: 714px;
 }
 .modal-form-header {
   display: flex;
@@ -1570,6 +1656,11 @@ body {
 .modal-form-footer .btn {
   flex: 1;
 }
+.add-plug-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
 
 @media (max-width: 420px) {
   .plug-grid {
@@ -1578,6 +1669,10 @@ body {
   .modal-form {
     max-width: 95%;
     border-radius: 16px;
+  }
+  .add-plug-columns {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 
@@ -1611,7 +1706,7 @@ body {
 
 /* ── Schedule Overlay ── */
 .schedule-modal-form {
-  max-width: 480px;
+  max-width: 520px;
 }
 .schedule-body {
   display: flex;
@@ -1639,19 +1734,29 @@ body {
 .schedule-time-row {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 4px;
 }
-.schedule-time-input {
-  width: 140px;
+.schedule-select {
+  width: 52px;
   text-align: center;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
-  padding: 10px 8px;
+  padding: 8px 4px;
   color: var(--text-primary);
-  letter-spacing: 1px;
-}
-.schedule-time-input::-webkit-calendar-picker-indicator {
-  filter: invert(0.7);
+  letter-spacing: 0.5px;
+  -webkit-appearance: menulist;
+  appearance: menulist;
   cursor: pointer;
+}
+.schedule-ampm {
+  width: 58px;
+}
+.schedule-colon {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1;
 }
 .schedule-recommended {
   display: flex;
@@ -1686,10 +1791,6 @@ body {
   .schedule-columns {
     grid-template-columns: 1fr;
     gap: 12px;
-  }
-  .schedule-time-input {
-    width: 100%;
-    max-width: 180px;
   }
 }
 

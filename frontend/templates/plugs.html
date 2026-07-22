@@ -37,41 +37,43 @@
 </div>
 
 <div id="add-plug-modal" class="modal-overlay hidden">
-  <div class="modal-form">
+  <div class="modal-form modal-form-wide">
     <div class="modal-form-header">
       <h2>Add Plugs</h2>
       <button class="modal-close-btn" id="add-plug-close">&times;</button>
     </div>
 
     <div class="modal-form-body">
-      <div class="form-section">
-        <h3 class="form-section-title">TAPO ACCOUNT INFO</h3>
-        <div class="form-group">
-          <label for="tapo-email">Email</label>
-          <input type="email" id="tapo-email" class="form-input" placeholder="your@email.com" autocomplete="email">
-        </div>
-        <div class="form-group">
-          <label for="tapo-password">Password</label>
-          <div class="password-wrap">
-            <input type="password" id="tapo-password" class="form-input" placeholder="TAPO account password" autocomplete="off">
-            <button class="eye-btn" id="tapo-password-toggle" type="button" aria-label="Toggle password visibility">👁</button>
+      <div class="add-plug-columns">
+        <div class="form-section">
+          <h3 class="form-section-title">TAPO ACCOUNT INFO</h3>
+          <div class="form-group">
+            <label for="tapo-email">Email</label>
+            <input type="email" id="tapo-email" class="form-input" placeholder="your@email.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="tapo-password">Password</label>
+            <div class="password-wrap">
+              <input type="password" id="tapo-password" class="form-input" placeholder="TAPO account password" autocomplete="off">
+              <button class="eye-btn" id="tapo-password-toggle" type="button" aria-label="Toggle password visibility">👁</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="form-section">
-        <h3 class="form-section-title">PLUG INFO</h3>
-        <div class="form-group">
-          <label for="plug-ip">IP address</label>
-          <input type="text" id="plug-ip" class="form-input" placeholder="xxx.xxx.x.xxx" autocomplete="off">
-        </div>
-        <div class="form-group">
-          <label for="plug-model">Model</label>
-          <input type="text" id="plug-model" class="form-input" placeholder="e.g. P110" autocomplete="off">
-        </div>
-        <div class="form-group">
-          <label for="plug-name">Plug name</label>
-          <input type="text" id="plug-name" class="form-input" placeholder="e.g. Heater" autocomplete="off">
+        <div class="form-section">
+          <h3 class="form-section-title">PLUG INFO</h3>
+          <div class="form-group">
+            <label for="plug-ip">IP address</label>
+            <input type="text" id="plug-ip" class="form-input" placeholder="xxx.xxx.x.xxx" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="plug-model">Model</label>
+            <input type="text" id="plug-model" class="form-input" placeholder="e.g. P110" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="plug-name">Plug name</label>
+            <input type="text" id="plug-name" class="form-input" placeholder="e.g. Heater" autocomplete="off">
+          </div>
         </div>
       </div>
 
@@ -101,7 +103,10 @@
         <div class="schedule-col">
           <label class="schedule-col-label">Time on</label>
           <div class="schedule-time-row">
-            <input type="time" id="schedule-time-on" class="form-input schedule-time-input" value="06:00">
+            <select id="schedule-on-hour" class="form-input schedule-select"></select>
+            <span class="schedule-colon">:</span>
+            <select id="schedule-on-min" class="form-input schedule-select"></select>
+            <select id="schedule-on-ampm" class="form-input schedule-select schedule-ampm"></select>
           </div>
           <div class="schedule-recommended">
             <span class="schedule-rec-label">Recommended</span>
@@ -111,7 +116,10 @@
         <div class="schedule-col">
           <label class="schedule-col-label">Time off</label>
           <div class="schedule-time-row">
-            <input type="time" id="schedule-time-off" class="form-input schedule-time-input" value="22:00">
+            <select id="schedule-off-hour" class="form-input schedule-select"></select>
+            <span class="schedule-colon">:</span>
+            <select id="schedule-off-min" class="form-input schedule-select"></select>
+            <select id="schedule-off-ampm" class="form-input schedule-select schedule-ampm"></select>
           </div>
           <div class="schedule-recommended">
             <span class="schedule-rec-label">Recommended</span>
@@ -126,6 +134,33 @@
     <div class="modal-form-footer">
       <button class="btn btn-secondary" id="schedule-cancel">Cancel</button>
       <button class="btn btn-primary" id="schedule-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="edit-plug-modal" class="modal-overlay hidden">
+  <div class="modal-form" style="max-width:400px">
+    <div class="modal-form-header">
+      <h2>Edit Plug</h2>
+      <button class="modal-close-btn" id="edit-plug-close">&times;</button>
+    </div>
+    <div class="modal-form-body">
+      <div class="form-group">
+        <label for="edit-plug-name">Plug name</label>
+        <input type="text" id="edit-plug-name" class="form-input">
+      </div>
+      <div class="form-group">
+        <label for="edit-plug-ip">IP address</label>
+        <input type="text" id="edit-plug-ip" class="form-input">
+      </div>
+      <div class="form-group">
+        <label for="edit-plug-model">Model</label>
+        <input type="text" id="edit-plug-model" class="form-input">
+      </div>
+    </div>
+    <div class="modal-form-footer">
+      <button class="btn btn-secondary" id="edit-plug-cancel">Cancel</button>
+      <button class="btn btn-primary" id="edit-plug-submit">Save</button>
     </div>
   </div>
 </div>

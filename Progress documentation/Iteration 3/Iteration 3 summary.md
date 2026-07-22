@@ -3,7 +3,7 @@ TODO:
 1) Implement TAPO functionality: 
     - User can link their TAPO account to the energy hub
     - User can view their TAPO devices and control them through the app 
-    - User can schedule for appliances to be turned off at specific times through out the day, based on reccomendations of when to turn them off 
+    - User can schedule for appliances to be turned off at specific times through out the day, based on reccomendations of when to turn them off  *DONE*
 
 2) Implement Demo mode: 
     - This will be a version of the app that will NOT be presented directly to the marker, but will be used for the sake of the video presentation tht i will screen record specific features 
@@ -15,9 +15,9 @@ TODO:
         - The appliance info should have preloaded reccomendations, instead of fetching from the LLM on app. 
 
 3) Redo the UI for the intitial graph, and overall 
- a) Currently the energy graph does not show how spending is dispersed through out the day, it only shows the total spending / day. Additionally the progress bar at the bottom
+ a) Currently the energy graph does not show how spending is dispersed through out the day, it only shows the total spending / day. Additionally the progress bar at the bottom *DONE*
 
- b) Should be a dark and light mode
+ b) Should be a dark and light mode *done*
 
 4) Info feature: 
     Next to all the terms that are used in the app, there should be an info button that explains what that term means. This should be a pop up that appears when the user clicks on the info button placed next to the term in question, and should disappear when the user clicks outside of the pop up. It should be a simple modal with a title and description of the term, in simple terms. This should be for things such as 'peak hours', 'off-peak hours', 'shoulder times', 'peak spendage', 'Kwh',  
