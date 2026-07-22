@@ -35,4 +35,7 @@ def create_app():
     from app.plug_routes import plug_bp
     app.register_blueprint(plug_bp)
 
+    from app.plug_scheduler import start_scheduler
+    start_scheduler()
+
     return app

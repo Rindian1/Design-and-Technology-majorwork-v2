@@ -211,6 +211,7 @@ class TapoCredentials(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, unique=True, nullable=False)
     email = Column(Text, nullable=False)
+    password = Column(Text, nullable=True)
 
     def to_dict(self):
         return {
@@ -237,6 +238,10 @@ class DatabaseSession:
                     conn.execute(text(f"ALTER TABLE user_plugs ADD COLUMN {col} TEXT"))
                 except Exception:
                     pass
+            try:
+                conn.execute(text("ALTER TABLE tapo_credentials ADD COLUMN password TEXT"))
+            except Exception:
+                pass
             conn.commit()
 
     def get_session(self):

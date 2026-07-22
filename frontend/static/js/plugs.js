@@ -46,8 +46,19 @@
       if (e.target === e.currentTarget) closePasswordModal();
     });
 
+    document.getElementById('edit-plug-close').addEventListener('click', closeEditModal);
+    document.getElementById('edit-plug-cancel').addEventListener('click', closeEditModal);
+    document.getElementById('edit-plug-submit').addEventListener('click', submitEditPlug);
+    document.getElementById('edit-plug-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeEditModal();
+    });
+
     window.addEventListener('tabChanged', (e) => {
       if (e.detail.tab === 'plugs') fetchPlugs();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.plug-menu-wrap')) closeAllMenus();
     });
   });
 
@@ -155,6 +166,10 @@
     const isOn = plug.status === true;
     const isOff = plug.status === false;
     const isUnknown = plug.status === null || plug.status === undefined;
+    const hasStat = plug.cost_per_hour !== null && plug.cost_per_hour !== undefined;
+    const statText = hasStat ? `$${plug.cost_per_hour.toFixed(2)}/hr` : '--/hr';
+    const hasWatts = plug.current_power_mw !== null && plug.current_power_mw !== undefined;
+    const wattsText = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W` : '-- W';
 
     card.innerHTML = `
       <div class="plug-card-left">
@@ -169,7 +184,7 @@
           <line x1="20" y1="18" x2="28" y2="18"/>
         </svg>
       </div>
-      <div class="plug-card-right">
+      <div class="plug-card-body">
         <div class="plug-name">${escapeHtml(plug.name)}</div>
         <div class="plug-controls">
           <label class="plug-toggle ${isOn ? 'on' : ''} ${isOff ? 'off' : ''}">
@@ -178,7 +193,18 @@
             <span class="toggle-label">${isOn ? 'On' : isOff ? 'Off' : 'Offline'}</span>
           </label>
           <button class="plug-schedule-btn" data-name="${escapeHtml(plug.name)}" title="Schedule" aria-label="Schedule">⏰</button>
+          <div class="plug-menu-wrap">
+            <button class="plug-menu-btn" title="Options" aria-label="Options">⋮</button>
+            <div class="plug-menu-dropdown hidden">
+              <button class="plug-menu-edit" data-name="${escapeHtml(plug.name)}">Edit</button>
+              <button class="plug-menu-remove" data-name="${escapeHtml(plug.name)}">Remove</button>
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="plug-stats">
+        <div class="plug-stat ${hasStat ? '' : 'dim'}">${statText}</div>
+        <div class="plug-stat-sub ${hasWatts ? '' : 'dim'}">${wattsText}</div>
       </div>
     `;
 
@@ -188,7 +214,33 @@
     const scheduleBtn = card.querySelector('.plug-schedule-btn');
     scheduleBtn.addEventListener('click', () => openSchedule(plug.name));
 
+    const menuBtn = card.querySelector('.plug-menu-btn');
+    const menuDropdown = card.querySelector('.plug-menu-dropdown');
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !menuDropdown.classList.contains('hidden');
+      closeAllMenus();
+      if (!isOpen) menuDropdown.classList.remove('hidden');
+    });
+    const removeBtn = card.querySelector('.plug-menu-remove');
+    removeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menuDropdown.classList.add('hidden');
+      removePlug(plug.name);
+    });
+
+    const editBtn = card.querySelector('.plug-menu-edit');
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menuDropdown.classList.add('hidden');
+      openEditModal(plug);
+    });
+
     return card;
+  }
+
+  function closeAllMenus() {
+    document.querySelectorAll('.plug-menu-dropdown').forEach(d => d.classList.add('hidden'));
   }
 
   function updateCard(plug) {
@@ -211,6 +263,19 @@
 
     const scheduleBtn = card.querySelector('.plug-schedule-btn');
     scheduleBtn.dataset.name = plug.name;
+
+    const stats = card.querySelector('.plug-stats');
+    const hasStat = plug.cost_per_hour !== null && plug.cost_per_hour !== undefined;
+    const hasWatts = plug.current_power_mw !== null && plug.current_power_mw !== undefined;
+    const statEl = stats.querySelector('.plug-stat');
+    statEl.textContent = hasStat ? `$${plug.cost_per_hour.toFixed(2)}/hr` : '--/hr';
+    statEl.className = `plug-stat ${hasStat ? '' : 'dim'}`;
+    const subEl = stats.querySelector('.plug-stat-sub');
+    subEl.textContent = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W` : '-- W';
+    subEl.className = `plug-stat-sub ${hasWatts ? '' : 'dim'}`;
+
+    const menuRemove = card.querySelector('.plug-menu-remove');
+    menuRemove.dataset.name = plug.name;
   }
 
   async function togglePlug(name, input) {
@@ -247,6 +312,7 @@
 
   function openSchedule(plugName) {
     document.getElementById('schedule-plug-name').textContent = plugName;
+    populateTimeSelects();
     loadSchedule(plugName);
     document.getElementById('schedule-modal').classList.remove('hidden');
   }
@@ -255,14 +321,50 @@
     document.getElementById('schedule-modal').classList.add('hidden');
   }
 
+  function populateTimeSelects() {
+    const hours = ['12','1','2','3','4','5','6','7','8','9','10','11'];
+    const mins = ['00','15','30','45'];
+    ['on','off'].forEach(prefix => {
+      const hSel = document.getElementById(`schedule-${prefix}-hour`);
+      const mSel = document.getElementById(`schedule-${prefix}-min`);
+      const aSel = document.getElementById(`schedule-${prefix}-ampm`);
+      if (!hSel.options.length) {
+        hours.forEach(h => { const o = new Option(h, h); hSel.add(o); });
+        mins.forEach(m => { const o = new Option(m, m); mSel.add(o); });
+        aSel.add(new Option('AM', 'AM'));
+        aSel.add(new Option('PM', 'PM'));
+      }
+    });
+  }
+
+  function setSelects(prefix, hh24) {
+    if (!hh24) return;
+    const [hh, mm] = hh24.split(':').map(Number);
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+    document.getElementById(`schedule-${prefix}-hour`).value = String(h12);
+    document.getElementById(`schedule-${prefix}-min`).value = String(mm).padStart(2, '0');
+    document.getElementById(`schedule-${prefix}-ampm`).value = ampm;
+  }
+
+  function getSelects(prefix) {
+    const h = parseInt(document.getElementById(`schedule-${prefix}-hour`).value, 10);
+    const m = document.getElementById(`schedule-${prefix}-min`).value;
+    const ampm = document.getElementById(`schedule-${prefix}-ampm`).value;
+    let hh = h;
+    if (ampm === 'AM' && h === 12) hh = 0;
+    else if (ampm === 'PM' && h !== 12) hh = h + 12;
+    return `${String(hh).padStart(2, '0')}:${m}`;
+  }
+
   async function loadSchedule(plugName) {
     try {
       const res = await fetch(`/api/plugs/${encodeURIComponent(plugName)}/schedule`);
       if (!res.ok) return;
       const data = await res.json();
 
-      if (data.time_on) document.getElementById('schedule-time-on').value = data.time_on;
-      if (data.time_off) document.getElementById('schedule-time-off').value = data.time_off;
+      if (data.time_on) setSelects('on', data.time_on);
+      if (data.time_off) setSelects('off', data.time_off);
       document.getElementById('schedule-rec-on').textContent = data.suggested_on || '--:--';
       document.getElementById('schedule-rec-off').textContent = data.suggested_off || '--:--';
     } catch (err) {
@@ -272,8 +374,8 @@
 
   async function saveSchedule() {
     const name = document.getElementById('schedule-plug-name').textContent;
-    const time_on = document.getElementById('schedule-time-on').value;
-    const time_off = document.getElementById('schedule-time-off').value;
+    const time_on = getSelects('on');
+    const time_off = getSelects('off');
 
     try {
       const res = await fetch(`/api/plugs/${encodeURIComponent(name)}/schedule`, {
@@ -292,11 +394,26 @@
     }
   }
 
+  async function removePlug(name) {
+    if (!confirm(`Remove "${name}"?`)) return;
+    try {
+      const res = await fetch(`${PLUGS_API}/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Failed to remove plug');
+        return;
+      }
+      await fetchPlugs();
+    } catch (err) {
+      alert('Failed to remove plug: ' + err.message);
+    }
+  }
+
   function fillRecommended() {
     const recOn = document.getElementById('schedule-rec-on').textContent;
     const recOff = document.getElementById('schedule-rec-off').textContent;
-    if (recOn && recOn !== '--:--') document.getElementById('schedule-time-on').value = recOn;
-    if (recOff && recOff !== '--:--') document.getElementById('schedule-time-off').value = recOff;
+    if (recOn && recOn !== '--:--') setSelects('on', recOn);
+    if (recOff && recOff !== '--:--') setSelects('off', recOff);
   }
 
   function openPasswordOnlyModal() {
@@ -314,6 +431,59 @@
     document.getElementById('password-modal').classList.add('hidden');
     document.getElementById('password-only-pass').type = 'password';
     document.getElementById('password-only-toggle').textContent = '👁';
+  }
+
+  let editingPlugOriginalName = '';
+
+  function openEditModal(plug) {
+    editingPlugOriginalName = plug.name;
+    document.getElementById('edit-plug-name').value = plug.name;
+    document.getElementById('edit-plug-ip').value = plug.ip_address || '';
+    document.getElementById('edit-plug-model').value = plug.model || '';
+    document.getElementById('edit-plug-modal').classList.remove('hidden');
+  }
+
+  function closeEditModal() {
+    document.getElementById('edit-plug-modal').classList.add('hidden');
+  }
+
+  async function submitEditPlug() {
+    const name = document.getElementById('edit-plug-name').value.trim();
+    const ip = document.getElementById('edit-plug-ip').value.trim();
+    const model = document.getElementById('edit-plug-model').value.trim();
+
+    if (!name) {
+      alert('Please enter a name.');
+      return;
+    }
+    if (!ip) {
+      alert('Please enter an IP address.');
+      return;
+    }
+
+    const btn = document.getElementById('edit-plug-submit');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+      const res = await fetch(`${PLUGS_API}/${encodeURIComponent(editingPlugOriginalName)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, ip_address: ip, model }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to update plug');
+        return;
+      }
+      closeEditModal();
+      await fetchPlugs();
+    } catch (err) {
+      alert('Failed to update plug: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save';
+    }
   }
 
   async function submitPasswordOnly() {

@@ -4,7 +4,7 @@ from functools import wraps
 from flask import Blueprint, render_template, jsonify, session, request
 from tapo import ApiClient
 
-from app.models import DatabaseSession, UserPlug, TapoCredentials
+from app.models import DatabaseSession, UserPlug, TapoCredentials, UserProfile
 from config import HEATING_DB_PATH
 
 plug_bp = Blueprint('plugs', __name__)
@@ -58,20 +58,50 @@ def list_plugs():
             if creds:
                 tapo_email = creds.email
 
+        profile = sess.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+        rate_per_kwh = 0.30
+        if profile and profile.survey_data:
+            import json
+            data = json.loads(profile.survey_data)
+            knows_plan = data.get('knows_plan', 'no')
+            if knows_plan == 'yes' and data.get('plan_type') == 'tou':
+                rate_cents = float(data.get('peak_charge', 30))
+            else:
+                rate_cents = float(data.get('peak_charge', 27))
+            rate_per_kwh = rate_cents / 100
+        rate_per_kwh = rate_per_kwh or 0.30
+
         results = []
         for plug in plugs:
             status = None
+            current_power_mw = None
+            cost_per_hour = None
+            today_energy_kwh = None
             if has_creds:
                 try:
                     client = ApiClient(tapo_email, tapo_password)
                     device = await_async(client.p110(plug.ip_address))
                     info = await_async(device.get_device_info())
                     status = info.device_on
+                    try:
+                        power_info = await_async(device.get_current_power())
+                        current_power_mw = power_info.current_power
+                        cost_per_hour = round((current_power_mw / 1000) * rate_per_kwh, 4)
+                    except Exception:
+                        pass
+                    try:
+                        energy = await_async(device.get_energy_usage())
+                        today_energy_kwh = round(energy.today_energy, 3)
+                    except Exception:
+                        pass
                 except Exception:
-                    status = None
+                    pass
 
             d = plug.to_dict()
             d['status'] = status
+            d['current_power_mw'] = current_power_mw
+            d['cost_per_hour'] = cost_per_hour
+            d['today_energy_kwh'] = today_energy_kwh
             results.append(d)
 
         return jsonify({
@@ -124,8 +154,9 @@ def add_plug():
         creds = sess.query(TapoCredentials).filter(TapoCredentials.user_id == user_id).first()
         if creds:
             creds.email = email
+            creds.password = password
         else:
-            creds = TapoCredentials(user_id=user_id, email=email)
+            creds = TapoCredentials(user_id=user_id, email=email, password=password)
             sess.add(creds)
 
         sess.commit()
@@ -247,12 +278,56 @@ def save_credentials():
         creds = sess.query(TapoCredentials).filter(TapoCredentials.user_id == user_id).first()
         if creds:
             creds.email = email
+            creds.password = password
         else:
-            creds = TapoCredentials(user_id=user_id, email=email)
+            creds = TapoCredentials(user_id=user_id, email=email, password=password)
             sess.add(creds)
         sess.commit()
 
         return jsonify({'success': True})
+    finally:
+        close_db(db, sess)
+
+
+@plug_bp.route('/api/plugs/<name>', methods=['PUT'])
+@login_required
+def edit_plug(name):
+    user_id = get_user_id()
+    data = request.get_json(silent=True) or {}
+    new_name = (data.get('name') or '').strip()
+    new_ip = (data.get('ip_address') or '').strip()
+    new_model = (data.get('model') or '').strip()
+
+    if not new_name:
+        return jsonify({'error': 'Plug name is required'}), 400
+    if not new_ip:
+        return jsonify({'error': 'IP address is required'}), 400
+
+    db, sess = get_db()
+    try:
+        plug = sess.query(UserPlug).filter(
+            UserPlug.user_id == user_id,
+            UserPlug.name == name
+        ).first()
+        if not plug:
+            return jsonify({'error': 'Plug not found'}), 404
+
+        if new_name != name:
+            dup = sess.query(UserPlug).filter(
+                UserPlug.user_id == user_id,
+                UserPlug.name == new_name
+            ).first()
+            if dup:
+                return jsonify({'error': 'A plug with this name already exists'}), 409
+
+        plug.name = new_name
+        plug.ip_address = new_ip
+        plug.model = new_model or None
+        sess.commit()
+        return jsonify(plug.to_dict())
+    except Exception as e:
+        sess.rollback()
+        return jsonify({'error': str(e)}), 500
     finally:
         close_db(db, sess)
 
