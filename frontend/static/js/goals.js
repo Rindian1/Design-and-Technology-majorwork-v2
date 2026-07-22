@@ -43,7 +43,7 @@ class GoalsManager {
             <div class="goals-header ${prevPoints !== null && points > prevPoints ? 'points-flash' : ''}">
                 <span class="goals-header-icon">\u{1f3c6}</span>
                 <div>
-                    <div class="goals-header-label">Your Points</div>
+                    <div class="goals-header-label">Your Points${INFO.icon('points')}</div>
                 </div>
                 <span class="goals-header-points" id="goals-counter">${prevPoints !== null && points > prevPoints ? prevPoints : points}</span>
             </div>

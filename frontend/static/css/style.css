@@ -1795,3 +1795,67 @@ body {
 }
 
 .light-mode .schedule-recommended { background: var(--bg-faint); }
+
+/* ── Info Popups ── */
+.info-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 50%;
+  background: var(--bg-faint);
+  color: var(--text-muted);
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 4px;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  user-select: none;
+}
+.info-trigger:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.info-popup {
+  position: fixed;
+  z-index: 2000;
+  max-width: 280px;
+  min-width: 180px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  animation: infoPopupIn 0.15s ease-out;
+}
+@keyframes infoPopupIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.info-popup-term {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 4px;
+}
+.info-popup-def {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-body);
+}
+.light-mode .info-popup {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.info-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+.info-heading .info-trigger {
+  position: relative;
+  top: -1px;
+}

@@ -170,6 +170,7 @@
     const statText = hasStat ? `$${plug.cost_per_hour.toFixed(2)}/hr` : '--/hr';
     const hasWatts = plug.current_power_mw !== null && plug.current_power_mw !== undefined;
     const wattsText = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W` : '-- W';
+    const wattsHtml = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W${INFO.icon('w')}` : '-- W';
 
     card.innerHTML = `
       <div class="plug-card-left">
@@ -204,7 +205,7 @@
       </div>
       <div class="plug-stats">
         <div class="plug-stat ${hasStat ? '' : 'dim'}">${statText}</div>
-        <div class="plug-stat-sub ${hasWatts ? '' : 'dim'}">${wattsText}</div>
+        <div class="plug-stat-sub ${hasWatts ? '' : 'dim'}">${wattsHtml}</div>
       </div>
     `;
 
@@ -272,6 +273,7 @@
     statEl.className = `plug-stat ${hasStat ? '' : 'dim'}`;
     const subEl = stats.querySelector('.plug-stat-sub');
     subEl.textContent = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W` : '-- W';
+    subEl.innerHTML = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W${INFO.icon('w')}` : '-- W';
     subEl.className = `plug-stat-sub ${hasWatts ? '' : 'dim'}`;
 
     const menuRemove = card.querySelector('.plug-menu-remove');

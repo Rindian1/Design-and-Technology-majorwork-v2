@@ -26,6 +26,7 @@
             <span class="points-badge-icon">🏆</span>
             <span class="points-badge-value" id="points-badge-value">0</span>
           </button>
+          <span class="info-trigger" data-info-key="points" tabindex="0" role="button" aria-label="More info about points">ℹ</span>
         <div class="user-menu" id="user-menu" style="display:none">
           <button class="user-menu-btn" id="user-menu-btn">
             <span id="user-email-display"></span>
@@ -66,6 +67,7 @@
     </div>
   </div>
 
+  <script src="{{ url_for('static', filename='js/info-popups.js') }}?v=1"></script>
   <script src="{{ url_for('static', filename='js/api.js') }}?v=4"></script>
   <script src="{{ url_for('static', filename='js/navigation.js') }}?v=4"></script>
   <script src="{{ url_for('static', filename='js/gauge.js') }}?v=5"></script>
