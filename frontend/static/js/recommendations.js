@@ -26,9 +26,13 @@ class RecommendationsManager {
         }
     }
 
+    _applianceHeading() {
+        return '<h1 class="gi-title"><span class="info-heading">Appliance Specific Recommendations' + INFO.icon('appliance_recs') + '</span></h1>';
+    }
+
     async loadApplianceRecs(date) {
         if (!this._applianceContainer) return;
-        this._showLoading(this._applianceContainer);
+        this._showLoading(this._applianceContainer, true);
 
         try {
             const data = await energyAPI.getApplianceRecs(date);
@@ -37,15 +41,15 @@ class RecommendationsManager {
                 return;
             }
             if (data && data.error) {
-                this._showError(this._applianceContainer, data.error);
+                this._showError(this._applianceContainer, data.error, true);
                 return;
             }
-            this._showEmpty(this._applianceContainer, 'No appliance recommendations available. Fill in your appliance details in the survey.');
+            this._showEmpty(this._applianceContainer, 'No appliance recommendations available. Fill in your appliance details in the survey.', true);
         } catch (err) {
             if (err.message && err.message.includes('404')) {
-                this._showEmpty(this._applianceContainer, 'No appliance recommendations available.');
+                this._showEmpty(this._applianceContainer, 'No appliance recommendations available.', true);
             } else {
-                this._showError(this._applianceContainer, 'Failed to load recommendations.');
+                this._showError(this._applianceContainer, 'Failed to load recommendations.', true);
             }
         }
     }
@@ -345,7 +349,7 @@ class RecommendationsManager {
         const sorted = [...recs].sort((a, b) => (b.estimated_annual_savings_dollars || 0) - (a.estimated_annual_savings_dollars || 0));
         const cards = sorted.map(r => this._createApplianceCard(r)).join('');
 
-        this._applianceContainer.innerHTML = `<h2 class="gi-section-title" style="margin-bottom:12px"><span class="info-heading">Appliance Specific Recommendations${INFO.icon('appliance_recs')}</span></h2><div class="recs-appliance-list">${cards}</div>`;
+        this._applianceContainer.innerHTML = this._applianceHeading() + `<div class="recs-appliance-list">${cards}</div>`;
     }
 
     _createApplianceCard(rec) {
@@ -402,9 +406,10 @@ class RecommendationsManager {
         return div.innerHTML;
     }
 
-    _showLoading(container) {
+    _showLoading(container, withHeading) {
         if (!container) return;
-        container.innerHTML = `
+        const heading = withHeading ? this._applianceHeading() : '';
+        container.innerHTML = heading + `
             <div class="recs-state">
                 <div class="loading-spinner"></div>
                 <p class="recs-state-text">Loading...</p>
@@ -412,9 +417,10 @@ class RecommendationsManager {
         `;
     }
 
-    _showEmpty(container, msg) {
+    _showEmpty(container, msg, withHeading) {
         if (!container) return;
-        container.innerHTML = `
+        const heading = withHeading ? this._applianceHeading() : '';
+        container.innerHTML = heading + `
             <div class="recs-state">
                 <div class="recs-state-icon">\u{1f4a1}</div>
                 <p class="recs-state-text">${this._escapeHtml(msg)}</p>
@@ -422,9 +428,10 @@ class RecommendationsManager {
         `;
     }
 
-    _showError(container, msg) {
+    _showError(container, msg, withHeading) {
         if (!container) return;
-        container.innerHTML = `
+        const heading = withHeading ? this._applianceHeading() : '';
+        container.innerHTML = heading + `
             <div class="recs-state recs-error">
                 <p class="recs-state-text">${this._escapeHtml(msg)}</p>
             </div>

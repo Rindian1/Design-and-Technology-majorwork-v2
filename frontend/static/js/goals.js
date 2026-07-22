@@ -52,6 +52,7 @@ class GoalsManager {
         const cardsHtml = goals.map(g => this._renderCard(g)).join('');
 
         this._container.innerHTML = `
+            <h1 class="gi-title"><span class="info-heading">Goals${INFO.icon('points')}</span></h1>
             ${headerHtml}
             <div class="goals-list">${cardsHtml}</div>
         `;
