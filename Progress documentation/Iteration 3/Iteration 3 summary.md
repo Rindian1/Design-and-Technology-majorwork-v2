@@ -17,9 +17,9 @@ TODO:
 3) Redo the UI for the intitial graph, and overall 
  a) Currently the energy graph does not show how spending is dispersed through out the day, it only shows the total spending / day. Additionally the progress bar at the bottom *DONE*
 
- b) Should be a dark and light mode *done*
+ b) Should be a dark and light mode *DONE*
 
 4) Info feature: 
-    Next to all the terms that are used in the app, there should be an info button that explains what that term means. This should be a pop up that appears when the user clicks on the info button placed next to the term in question, and should disappear when the user clicks outside of the pop up. It should be a simple modal with a title and description of the term, in simple terms. This should be for things such as 'peak hours', 'off-peak hours', 'shoulder times', 'peak spendage', 'Kwh',  
+    Next to all the terms that are used in the app, there should be an info button that explains what that term means. This should be a pop up that appears when the user clicks on the info button placed next to the term in question, and should disappear when the user clicks outside of the pop up. It should be a simple modal with a title and description of the term, in simple terms. This should be for things such as 'peak hours', 'off-peak hours', 'shoulder times', 'peak spendage', 'Kwh',  *DONE*
 
 5) Appliance specific should have a 'current appliance drop down at the top, where a user can view the stats of their current appliance. Also this tab should not have the day selector. 
