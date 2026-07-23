@@ -171,6 +171,8 @@ class EnergyDashboard {
   }
 
   _startFF() {
+    if (typeof goalsManager !== 'undefined' && goalsManager._ff?.running) goalsManager._stopFF(true);
+
     const ffBtn = document.getElementById('ff-btn');
     const ffTime = document.getElementById('ff-time');
 
@@ -292,4 +294,4 @@ class EnergyDashboard {
   }
 }
 
-new EnergyDashboard();
+window.dashboard = new EnergyDashboard();

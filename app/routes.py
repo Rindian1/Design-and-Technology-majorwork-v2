@@ -170,6 +170,24 @@ def register_routes(app):
             return jsonify(result[0]), result[1]
         return jsonify(result)
 
+    @app.route('/api/goals/demo-init', methods=['POST'])
+    @login_required
+    def demo_init_goals():
+        user_id = get_user_id()
+        data = request.get_json(silent=True) or {}
+        start_date = data.get('date')
+        if not start_date:
+            return jsonify({'error': 'date required'}), 400
+        result = goals_engine.demo_init(user_id, start_date)
+        return jsonify(result)
+
+    @app.route('/api/goals/reset', methods=['POST'])
+    @login_required
+    def reset_goals():
+        user_id = get_user_id()
+        result = goals_engine.reset_all(user_id)
+        return jsonify(result)
+
     @app.route('/api/health')
     def health_check():
         return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})

@@ -4,6 +4,7 @@ class RecommendationsManager {
         this._applianceContainer = document.getElementById('appliance-container');
         this._chartInstance = null;
         this._trendChartInstance = null;
+        this._ff = { running: false, timer: null, date: null };
     }
 
     async loadGeneralInsights(date) {
@@ -120,6 +121,13 @@ class RecommendationsManager {
         this._generalContainer.innerHTML = `
             <div class="general-insights">
                 <h1 class="gi-title"><span class="info-heading">General Insights${INFO.icon('general_insights')}</span></h1>
+                <div class="gi-ff-bar">
+                    <div class="ff-controls">
+                        <button id="ff-gi-reset" class="ff-goals-reset" title="Reset to today's data">&#8634;</button>
+                        <span id="ff-gi-time" class="ff-goals-time hidden"></span>
+                        <button id="ff-gi-btn" class="ff-goals-btn" title="Fast forward through time">&#9654;</button>
+                    </div>
+                </div>
 
                 <div class="gi-section-a">
                     <div class="gi-chart-col">
@@ -187,6 +195,7 @@ class RecommendationsManager {
 
         this._initChart(dayLabels, costValues);
         this._initTrendChart();
+        this._bindFFControls();
     }
 
     _initChart(labels, values) {
@@ -404,6 +413,106 @@ class RecommendationsManager {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    _bindFFControls() {
+        const ffBtn = document.getElementById('ff-gi-btn');
+        const resetBtn = document.getElementById('ff-gi-reset');
+        if (ffBtn) {
+            ffBtn.onclick = () => {
+                if (this._ff.running) {
+                    this._stopFF();
+                } else {
+                    this._startFF();
+                }
+            };
+        }
+        if (resetBtn) {
+            resetBtn.onclick = () => this._resetGI();
+        }
+    }
+
+    async _startFF() {
+        const btn = document.getElementById('ff-gi-btn');
+        const timeEl = document.getElementById('ff-gi-time');
+        if (!btn) return;
+
+        let range;
+        try {
+            range = await energyAPI.getDateRange();
+        } catch (e) {
+            return;
+        }
+        if (!range || !range.earliest) return;
+
+        this._ff.running = true;
+        this._ff.date = range.earliest;
+        btn.classList.add('running');
+        btn.innerHTML = '&#9646;&#9646;';
+        timeEl.classList.remove('hidden');
+
+        energyAPI.clearCache();
+        this._tickFF();
+        this._ff.timer = setInterval(() => this._tickFF(), 500);
+    }
+
+    _stopFF() {
+        const btn = document.getElementById('ff-gi-btn');
+        const timeEl = document.getElementById('ff-gi-time');
+
+        clearInterval(this._ff.timer);
+        this._ff.running = false;
+        this._ff.timer = null;
+
+        if (btn) {
+            btn.classList.remove('running');
+            btn.innerHTML = '&#9654;';
+        }
+        if (timeEl) timeEl.classList.add('hidden');
+    }
+
+    async _tickFF() {
+        const { date } = this._ff;
+        if (!date) { this._stopFF(); return; }
+
+        const range = await energyAPI.getDateRange().catch(() => null);
+        if (!range || date > range.latest) { this._stopFF(); return; }
+
+        this._updateFFTime(date);
+
+        try {
+            energyAPI.clearCache();
+            const data = await energyAPI.getGeneralDetailed(date);
+            if (data && data.weekly_spending && data.weekly_spending.length > 0) {
+                this._renderGeneralDetailed(data);
+                this._bindFFControls();
+                const btn = document.getElementById('ff-gi-btn');
+                if (btn) { btn.classList.add('running'); btn.innerHTML = '&#9646;&#9646;'; }
+                const timeEl = document.getElementById('ff-gi-time');
+                if (timeEl) timeEl.classList.remove('hidden');
+            }
+        } catch (e) {
+            /* skip dates with no data */
+        }
+
+        const next = new Date(date);
+        next.setDate(next.getDate() + 1);
+        this._ff.date = next.toISOString().split('T')[0];
+    }
+
+    _updateFFTime(dateStr) {
+        const el = document.getElementById('ff-gi-time');
+        if (!el) return;
+        const d = new Date(dateStr + 'T00:00:00');
+        const opts = { weekday: 'short', month: 'short', day: 'numeric' };
+        el.textContent = d.toLocaleDateString('en-US', opts);
+    }
+
+    async _resetGI() {
+        if (this._ff.running) this._stopFF();
+        const date = navigation.getCurrentDate();
+        energyAPI.clearCache();
+        await this.loadGeneralInsights(date);
     }
 
     _showLoading(container, withHeading) {

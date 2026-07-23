@@ -1062,3 +1062,48 @@ class GoalsEngine:
             return {'status': 'ok', 'goal_id': goal_id, 'new_status': goal.status}
         finally:
             session.close()
+
+    def demo_init(self, user_id: int, start_date: str):
+        parsed = datetime.strptime(start_date, '%Y-%m-%d').date()
+        session = self._get_session()
+        try:
+            goals = session.query(UserGoal).filter(UserGoal.user_id == user_id).all()
+            for g in goals:
+                if g.status == 'active':
+                    g.current_value = 0
+                    g.current_streak = 0
+                    g.completed = False
+                    g.timeframe_start = parsed
+                    g.last_checked_date = None
+                    g.streak_start_date = parsed
+
+            profile = session.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+            if profile:
+                profile.points_total = 0
+
+            session.commit()
+            return {'status': 'ok'}
+        finally:
+            session.close()
+
+    def reset_all(self, user_id: int):
+        session = self._get_session()
+        try:
+            goals = session.query(UserGoal).filter(UserGoal.user_id == user_id).all()
+            for g in goals:
+                g.status = 'inactive'
+                g.current_value = 0
+                g.current_streak = 0
+                g.completed = False
+                g.timeframe_start = None
+                g.last_checked_date = None
+                g.streak_start_date = None
+
+            profile = session.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+            if profile:
+                profile.points_total = 0
+
+            session.commit()
+            return {'status': 'ok'}
+        finally:
+            session.close()
