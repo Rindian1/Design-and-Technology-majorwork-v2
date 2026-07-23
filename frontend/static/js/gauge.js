@@ -52,6 +52,27 @@ class GaugeManager {
     this.initChart(this.currentData);
   }
 
+  renderPartial(slicedValues, partialStats) {
+    if (!partialStats || !partialStats.count) {
+      this.setDial(0);
+      this.setCentre(0, 0);
+      this.setMiniStats(null, null, null, null);
+      this.initChartPartial(slicedValues);
+      return;
+    }
+
+    const totalKwh = partialStats.total / 1000;
+    const peakKw = partialStats.peak / 1000;
+    const avgKw = partialStats.average / 1000;
+    const cost = partialStats.cost !== undefined ? partialStats.cost : totalKwh * this.ratePerKwh;
+    const fillRatio = Math.min(totalKwh / this.budgetKwh, 1);
+
+    this.setDial(fillRatio);
+    this.setCentre(cost, totalKwh);
+    this.setMiniStats(totalKwh, peakKw, avgKw, cost);
+    this.initChartPartial(slicedValues);
+  }
+
   setDial(ratio) {
     if (this.fillEl) {
       const dashOffset = 440 - ratio * 440;
@@ -174,6 +195,78 @@ class GaugeManager {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: reduceMotion ? 0 : undefined },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          y: { display: false, beginAtZero: true },
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: '#777',
+              font: { size: 9 },
+              maxRotation: 0,
+            },
+          }
+        }
+      }
+    });
+  }
+
+  initChartPartial(slicedValues) {
+    const count = slicedValues.length;
+    if (count === 0) return;
+
+    const tariffColors = { peak: '#ff5252', shoulder: '#ffab00', offpeak: '#00e676' };
+
+    const fullData = Array(24).fill(0);
+    const bgColors = Array(24).fill('transparent');
+    for (let i = 0; i < count; i++) {
+      fullData[i] = +(slicedValues[i] / 1000).toFixed(3);
+      const period = this._getTariffPeriod(i);
+      bgColors[i] = period === 'peak' ? 'rgba(255, 82, 82, 0.35)' : tariffColors[period] + '40';
+    }
+
+    if (this.chartInstance) {
+      this.chartInstance.data.datasets[0].data = fullData;
+      this.chartInstance.data.datasets[0].backgroundColor = bgColors;
+      this.chartInstance.update('none');
+      return;
+    }
+
+    const canvas = document.getElementById('home-chart');
+    if (!canvas) return;
+
+    const legendEl = document.getElementById('home-legend');
+    if (legendEl) {
+      const items = this._buildLegendItems();
+      legendEl.innerHTML = items.map(item =>
+        `<span class="dl-item"><span class="dl-dot ${item.cls}"></span> ${item.label}</span>`
+      ).join('');
+    }
+
+    const timeLabels = ['12a','3a','6a','9a','12p','3p','6p','9p'];
+    const labels = Array(24).fill('');
+    for (let i = 0; i < timeLabels.length; i++) {
+      labels[i * 3] = timeLabels[i];
+    }
+
+    const ctx = canvas.getContext('2d');
+
+    this.chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: fullData,
+          backgroundColor: bgColors,
+          borderColor: 'transparent',
+          borderWidth: 0,
+          borderRadius: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
         scales: {
           y: { display: false, beginAtZero: true },

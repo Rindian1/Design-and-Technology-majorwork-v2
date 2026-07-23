@@ -48,6 +48,7 @@ class EnergyDashboard {
     await this.waitForNavigation();
     this.listenForDateChanges();
     this.setupErrorHandlers();
+    this.setupFastForward();
     await this.loadInitialData();
   }
 
@@ -151,6 +152,123 @@ class EnergyDashboard {
     window.addEventListener('error', (e) => {
       console.error('JavaScript error:', e.error);
     });
+  }
+
+  setupFastForward() {
+    const ffBtn = document.getElementById('ff-btn');
+    const ffTime = document.getElementById('ff-time');
+    if (!ffBtn) return;
+
+    this.ff = { running: false, timer: null, date: null, hour: 0, dayData: null };
+
+    ffBtn.addEventListener('click', () => {
+      if (this.ff.running) {
+        this._stopFF();
+      } else {
+        this._startFF();
+      }
+    });
+  }
+
+  _startFF() {
+    const ffBtn = document.getElementById('ff-btn');
+    const ffTime = document.getElementById('ff-time');
+
+    this.ff.date = navigation.getCurrentDate();
+    this.ff.hour = 0;
+    this.ff.running = true;
+
+    ffBtn.classList.add('running');
+    ffBtn.innerHTML = '&#9646;&#9646;';
+    ffTime.classList.remove('hidden');
+
+    energyAPI.clearCache();
+    this._fetchFFDay().then(() => {
+      this.ff.timer = setInterval(() => this._tickFF(), 250);
+    });
+  }
+
+  _stopFF() {
+    const ffBtn = document.getElementById('ff-btn');
+    const ffTime = document.getElementById('ff-time');
+
+    clearInterval(this.ff.timer);
+    this.ff.running = false;
+    this.ff.timer = null;
+
+    ffBtn.classList.remove('running');
+    ffBtn.innerHTML = '&#9654;';
+    ffTime.classList.add('hidden');
+
+    gaugeManager.loadDataForDate(navigation.getCurrentDate());
+  }
+
+  async _fetchFFDay() {
+    try {
+      const [chartData, stats] = await Promise.all([
+        energyAPI.getDailyData(this.ff.date),
+        energyAPI.getStatistics(this.ff.date)
+      ]);
+      this.ff.dayData = { chartData, stats };
+    } catch (err) {
+      this.ff.dayData = null;
+    }
+  }
+
+  _tickFF() {
+    const { hour, dayData } = this.ff;
+
+    if (dayData) {
+      const values = dayData.chartData.values || [];
+      const sliced = values.slice(0, hour + 1);
+      const partial = this._partialStats(sliced, dayData.stats);
+      gaugeManager.renderPartial(sliced, partial);
+    }
+
+    this._updateFFTime(this.ff.date, hour);
+
+    this.ff.hour++;
+    if (this.ff.hour > 23) {
+      this.ff.hour = 0;
+      this.ff.dayData = null;
+      const next = new Date(this.ff.date);
+      next.setDate(next.getDate() + 1);
+      const nextStr = next.toISOString().split('T')[0];
+      if (nextStr > navigation.dateRange.latest) {
+        this._stopFF();
+        return;
+      }
+      this.ff.date = nextStr;
+      energyAPI.clearCache();
+      this._fetchFFDay();
+    }
+  }
+
+  _partialStats(sliced, fullStats) {
+    if (!sliced || !sliced.length) {
+      return { count: 0, total: 0, peak: 0, average: 0, cost: 0 };
+    }
+    const total = sliced.reduce((s, v) => s + v, 0);
+    const peak = Math.max(...sliced);
+    const average = total / sliced.length;
+    let cost = 0;
+    if (fullStats && fullStats.total > 0) {
+      cost = (total / fullStats.total) * (fullStats.cost || 0);
+    } else {
+      cost = (total / 1000) * gaugeManager.ratePerKwh;
+    }
+    return { count: sliced.length, total, peak, average, cost };
+  }
+
+  _updateFFTime(date, hour) {
+    const el = document.getElementById('ff-time');
+    if (!el) return;
+    const d = new Date(date + 'T00:00:00');
+    const mon = d.toLocaleString('en-US', { month: 'short' });
+    const day = d.getDate();
+    const h = hour % 12 || 12;
+    const ap = hour < 12 ? 'am' : 'pm';
+    el.textContent = `${mon} ${day} \u2014 ${h}${ap}`;
   }
 
   setupThemeToggle() {
