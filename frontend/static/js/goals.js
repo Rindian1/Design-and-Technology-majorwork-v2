@@ -60,6 +60,8 @@ class GoalsManager {
             </div>
         `;
 
+        goals.sort((a, b) => (a.status === 'active' ? -1 : 1));
+
         const cardsHtml = goals.map(g => this._renderCard(g)).join('');
 
         this._container.innerHTML = `
@@ -98,6 +100,10 @@ class GoalsManager {
             ? this._renderSegmented(goal)
             : this._renderLinear(goal);
 
+        const tierHtml = goal.max_tiers > 1
+            ? `<div class="goal-tier">Tier ${goal.tier + 1}/${goal.max_tiers}</div>`
+            : '';
+
         return `
             <div class="goal-card ${activeClass}" data-goal-id="${goal.goal_id}">
                 <div class="goal-activation">
@@ -111,6 +117,7 @@ class GoalsManager {
                 <div class="goal-metric-box reward">
                     <div class="goal-metric-value">+${goal.completion_reward}</div>
                     <div class="goal-metric-label">Reward</div>
+                    ${tierHtml}
                 </div>
             </div>
         `;
@@ -340,6 +347,8 @@ class GoalsManager {
         const points = data.points_total || 0;
         const prevPoints = this._prevPoints;
         this._prevPoints = points;
+
+        goals.sort((a, b) => (a.status === 'active' ? -1 : 1));
 
         const cardsHtml = goals.map(g => this._renderCard(g)).join('');
 

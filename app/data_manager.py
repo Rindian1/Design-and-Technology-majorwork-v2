@@ -893,6 +893,11 @@ class GoalsEngine:
                     self._compute_progress(g, cfg, profile, parsed_date, session)
                     session.commit()
 
+                tiers = cfg.get('tiers', [])
+                current_tier = g.tier or 0
+                tier_cfg = tiers[current_tier] if current_tier < len(tiers) else {}
+                effective_reward = tier_cfg.get('reward', cfg['completion_reward'])
+
                 desc = self._render_description(cfg, g, profile)
                 result.append({
                     'goal_id': g.goal_id,
@@ -903,11 +908,13 @@ class GoalsEngine:
                     'target_value': g.target_value,
                     'current_streak': g.current_streak,
                     'completed': g.completed,
+                    'tier': current_tier,
+                    'max_tiers': len(tiers),
                     'timeframe_label': cfg['timeframe_label'].format(
                         current=g.current_value,
                         target=g.target_value,
                     ),
-                    'completion_reward': cfg['completion_reward'],
+                    'completion_reward': effective_reward,
                 })
 
             profile_obj = session.query(UserProfile).filter(
@@ -969,8 +976,7 @@ class GoalsEngine:
             current += timedelta(days=1)
 
         if int(goal.current_value) >= int(goal.target_value):
-            goal.completed = True
-            self._award_points(goal.user_id, cfg['completion_reward'], session)
+            self._complete_goal(goal, cfg, session)
 
     def _get_offpeak_ratio(self, records, profile):
         if not records:
@@ -1026,13 +1032,11 @@ class GoalsEngine:
 
             days_elapsed = (today - start).days + 1
             if days_elapsed >= 7 and not exceeded:
-                goal.completed = True
-                self._award_points(goal.user_id, cfg['completion_reward'], session)
+                self._complete_goal(goal, cfg, session)
             return
 
         if goal.current_value >= goal.target_value:
-            goal.completed = True
-            self._award_points(goal.user_id, cfg['completion_reward'], session)
+            self._complete_goal(goal, cfg, session)
 
     def _award_points(self, user_id, points, session):
         profile = session.query(UserProfile).filter(
@@ -1041,10 +1045,39 @@ class GoalsEngine:
         if profile:
             profile.points_total = (profile.points_total or 0) + points
 
+    def _complete_goal(self, goal, cfg, session):
+        tiers = cfg.get('tiers', [])
+        current_tier = goal.tier or 0
+
+        if current_tier + 1 < len(tiers):
+            next_tier = tiers[current_tier + 1]
+            self._award_points(goal.user_id, next_tier['reward'], session)
+            goal.tier = current_tier + 1
+            goal.target_value = float(next_tier['target'])
+            goal.current_value = 0
+            goal.current_streak = 0
+            goal.completed = False
+            goal.timeframe_start = None
+            goal.last_checked_date = None
+            goal.streak_start_date = None
+        else:
+            self._award_points(goal.user_id, cfg['completion_reward'], session)
+            goal.completed = True
+
     def _render_description(self, cfg, goal, profile):
+        tiers = cfg.get('tiers', [])
+        current_tier = goal.tier or 0
+        if current_tier < len(tiers):
+            desc_template = tiers[current_tier].get('description_template', cfg['description_template'])
+        else:
+            desc_template = cfg['description_template']
+
         pct = cfg.get('default_threshold_pct', 0) or 0
-        return cfg['description_template'].format(
-            target=int(goal.target_value),
+        if current_tier < len(tiers):
+            pct = tiers[current_tier].get('threshold_pct') or pct
+
+        return desc_template.format(
+            target=int(goal.target_value) if goal.target_value == int(goal.target_value) else goal.target_value,
             threshold_pct=pct,
             current=goal.current_value,
         )
@@ -1068,6 +1101,7 @@ class GoalsEngine:
                 goal.current_value = 0
                 goal.current_streak = 0
                 goal.completed = False
+                goal.tier = 0
                 goal.timeframe_start = parsed_date
                 goal.last_checked_date = None
                 goal.streak_start_date = parsed_date
@@ -1089,6 +1123,7 @@ class GoalsEngine:
                     g.current_value = 0
                     g.current_streak = 0
                     g.completed = False
+                    g.tier = 0
                     g.timeframe_start = parsed
                     g.last_checked_date = None
                     g.streak_start_date = parsed
@@ -1111,6 +1146,7 @@ class GoalsEngine:
                 g.current_value = 0
                 g.current_streak = 0
                 g.completed = False
+                g.tier = 0
                 g.timeframe_start = None
                 g.last_checked_date = None
                 g.streak_start_date = None

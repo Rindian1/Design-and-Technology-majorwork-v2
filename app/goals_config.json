@@ -6,7 +6,14 @@
     "default_target": 5,
     "default_threshold_pct": 0,
     "timeframe_label": "{current}/{target} days",
-    "completion_reward": 200
+    "completion_reward": 200,
+    "tiers": [
+      { "target": 5, "threshold_pct": 0, "reward": 200, "description_template": "Get a {target} day streak of staying below your budget" },
+      { "target": 7, "threshold_pct": 0, "reward": 250, "description_template": "Get a {target} day streak of staying below your budget" },
+      { "target": 10, "threshold_pct": 0, "reward": 350, "description_template": "Get a {target} day streak of staying below your budget" },
+      { "target": 10, "threshold_pct": 5, "reward": 400, "description_template": "Stay {threshold_pct}% under budget for {target} days" },
+      { "target": 14, "threshold_pct": 5, "reward": 500, "description_template": "Stay {threshold_pct}% under budget for {target} days" }
+    ]
   },
   {
     "goal_id": "peak_restriction",
@@ -15,7 +22,13 @@
     "default_target": 2,
     "default_threshold_pct": null,
     "timeframe_label": "{current:.1f}/{target} hours",
-    "completion_reward": 150
+    "completion_reward": 150,
+    "tiers": [
+      { "target": 2, "threshold_pct": null, "reward": 150, "description_template": "Stay under {target} hours of peak usage today" },
+      { "target": 1.5, "threshold_pct": null, "reward": 200, "description_template": "Stay under {target} hours of peak usage today" },
+      { "target": 1, "threshold_pct": null, "reward": 300, "description_template": "Stay under {target} hours of peak usage today" },
+      { "target": 0.5, "threshold_pct": null, "reward": 400, "description_template": "Stay under {target} hours of peak usage today" }
+    ]
   },
   {
     "goal_id": "weekly_reduction",
@@ -24,7 +37,13 @@
     "default_target": 7,
     "default_threshold_pct": 0,
     "timeframe_label": "${current:.0f} / ${target:.0f}",
-    "completion_reward": 300
+    "completion_reward": 300,
+    "tiers": [
+      { "target": 7, "threshold_pct": 0, "reward": 300, "description_template": "Stay below your weekly budget this week" },
+      { "target": 6, "threshold_pct": 0, "reward": 350, "description_template": "Stay below your weekly budget this week" },
+      { "target": 5, "threshold_pct": 0, "reward": 400, "description_template": "Stay below your weekly budget this week" },
+      { "target": 4, "threshold_pct": 0, "reward": 500, "description_template": "Stay below your weekly budget this week" }
+    ]
   },
   {
     "goal_id": "offpeak_shift",
@@ -33,6 +52,12 @@
     "default_target": 5,
     "default_threshold_pct": 70,
     "timeframe_label": "{current}/{target} days",
-    "completion_reward": 250
+    "completion_reward": 250,
+    "tiers": [
+      { "target": 5, "threshold_pct": 70, "reward": 250, "description_template": "Have {threshold_pct}% of energy usage outside peak hours for {target} days" },
+      { "target": 7, "threshold_pct": 75, "reward": 300, "description_template": "Have {threshold_pct}% of energy usage outside peak hours for {target} days" },
+      { "target": 7, "threshold_pct": 80, "reward": 400, "description_template": "Have {threshold_pct}% of energy usage outside peak hours for {target} days" },
+      { "target": 10, "threshold_pct": 85, "reward": 500, "description_template": "Have {threshold_pct}% of energy usage outside peak hours for {target} days" }
+    ]
   }
 ]

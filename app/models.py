@@ -52,6 +52,7 @@ class UserGoal(Base):
     timeframe_start = Column(Date, nullable=True)
     completed = Column(Boolean, nullable=False, default=False)
     last_checked_date = Column(Date, nullable=True)
+    tier = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, nullable=False)
 
     user = relationship('User')
@@ -68,6 +69,7 @@ class UserGoal(Base):
             'target_value': self.target_value,
             'current_streak': self.current_streak,
             'completed': self.completed,
+            'tier': self.tier,
             'streak_start_date': self.streak_start_date.isoformat() if self.streak_start_date else None,
             'timeframe_start': self.timeframe_start.isoformat() if self.timeframe_start else None,
         }
@@ -240,6 +242,10 @@ class DatabaseSession:
                     pass
             try:
                 conn.execute(text("ALTER TABLE tapo_credentials ADD COLUMN password TEXT"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE user_goals ADD COLUMN tier INTEGER DEFAULT 0"))
             except Exception:
                 pass
             conn.commit()
