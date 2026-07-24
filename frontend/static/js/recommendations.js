@@ -121,14 +121,6 @@ class RecommendationsManager {
         this._generalContainer.innerHTML = `
             <div class="general-insights">
                 <h1 class="gi-title"><span class="info-heading">General Insights${INFO.icon('general_insights')}</span></h1>
-                <div class="gi-ff-bar">
-                    <div class="ff-controls">
-                        <button id="ff-gi-reset" class="ff-goals-reset" title="Reset to today's data">&#8634;</button>
-                        <span id="ff-gi-time" class="ff-goals-time hidden"></span>
-                        <button id="ff-gi-btn" class="ff-goals-btn" title="Fast forward through time">&#9654;</button>
-                    </div>
-                </div>
-
                 <div class="gi-section-a">
                     <div class="gi-chart-col">
                         <h2 class="gi-section-title"><span class="info-heading">Weekly Spending${INFO.icon('weekly_spending')}</span></h2>
@@ -195,7 +187,6 @@ class RecommendationsManager {
 
         this._initChart(dayLabels, costValues);
         this._initTrendChart();
-        this._bindFFControls();
     }
 
     _initChart(labels, values) {
@@ -415,27 +406,12 @@ class RecommendationsManager {
         return div.innerHTML;
     }
 
-    _bindFFControls() {
-        const ffBtn = document.getElementById('ff-gi-btn');
-        const resetBtn = document.getElementById('ff-gi-reset');
-        if (ffBtn) {
-            ffBtn.onclick = () => {
-                if (this._ff.running) {
-                    this._stopFF();
-                } else {
-                    this._startFF();
-                }
-            };
-        }
-        if (resetBtn) {
-            resetBtn.onclick = () => this._resetGI();
-        }
-    }
-
     async _startFF() {
-        const btn = document.getElementById('ff-gi-btn');
-        const timeEl = document.getElementById('ff-gi-time');
-        if (!btn) return;
+        const ffBtn = document.getElementById('ff-btn');
+        const ffTime = document.getElementById('ff-time');
+
+        if (window.dashboard?.ff?.running) window.dashboard._stopFF();
+        if (typeof goalsManager !== 'undefined' && goalsManager._ff?.running) goalsManager._stopFF(true);
 
         let range;
         try {
@@ -447,9 +423,8 @@ class RecommendationsManager {
 
         this._ff.running = true;
         this._ff.date = range.earliest;
-        btn.classList.add('running');
-        btn.innerHTML = '&#9646;&#9646;';
-        timeEl.classList.remove('hidden');
+        if (ffBtn) { ffBtn.classList.add('running'); ffBtn.innerHTML = '&#9646;&#9646;'; }
+        if (ffTime) ffTime.classList.remove('hidden');
 
         energyAPI.clearCache();
         this._tickFF();
@@ -457,18 +432,15 @@ class RecommendationsManager {
     }
 
     _stopFF() {
-        const btn = document.getElementById('ff-gi-btn');
-        const timeEl = document.getElementById('ff-gi-time');
+        const ffBtn = document.getElementById('ff-btn');
+        const ffTime = document.getElementById('ff-time');
 
         clearInterval(this._ff.timer);
         this._ff.running = false;
         this._ff.timer = null;
 
-        if (btn) {
-            btn.classList.remove('running');
-            btn.innerHTML = '&#9654;';
-        }
-        if (timeEl) timeEl.classList.add('hidden');
+        if (ffBtn) { ffBtn.classList.remove('running'); ffBtn.innerHTML = '&#9654;'; }
+        if (ffTime) ffTime.classList.add('hidden');
     }
 
     async _tickFF() {
@@ -485,11 +457,10 @@ class RecommendationsManager {
             const data = await energyAPI.getGeneralDetailed(date);
             if (data && data.weekly_spending && data.weekly_spending.length > 0) {
                 this._renderGeneralDetailed(data);
-                this._bindFFControls();
-                const btn = document.getElementById('ff-gi-btn');
-                if (btn) { btn.classList.add('running'); btn.innerHTML = '&#9646;&#9646;'; }
-                const timeEl = document.getElementById('ff-gi-time');
-                if (timeEl) timeEl.classList.remove('hidden');
+                const ffBtn = document.getElementById('ff-btn');
+                if (ffBtn) { ffBtn.classList.add('running'); ffBtn.innerHTML = '&#9646;&#9646;'; }
+                const ffTime = document.getElementById('ff-time');
+                if (ffTime) ffTime.classList.remove('hidden');
             }
         } catch (e) {
             /* skip dates with no data */
@@ -501,18 +472,17 @@ class RecommendationsManager {
     }
 
     _updateFFTime(dateStr) {
-        const el = document.getElementById('ff-gi-time');
-        if (!el) return;
-        const d = new Date(dateStr + 'T00:00:00');
-        const opts = { weekday: 'short', month: 'short', day: 'numeric' };
-        el.textContent = d.toLocaleDateString('en-US', opts);
-    }
-
-    async _resetGI() {
-        if (this._ff.running) this._stopFF();
-        const date = navigation.getCurrentDate();
-        energyAPI.clearCache();
-        await this.loadGeneralInsights(date);
+        const el = document.getElementById('ff-time');
+        if (el) {
+            const d = new Date(dateStr + 'T00:00:00');
+            const opts = { weekday: 'short', month: 'short', day: 'numeric' };
+            el.textContent = d.toLocaleDateString('en-US', opts);
+        }
+        const dateEl = document.getElementById('current-date');
+        if (dateEl) {
+            const d = new Date(dateStr + 'T00:00:00');
+            dateEl.textContent = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
     }
 
     _showLoading(container, withHeading) {

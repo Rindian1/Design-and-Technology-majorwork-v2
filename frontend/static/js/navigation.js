@@ -301,7 +301,7 @@ class NavigationManager {
         // Trigger tab change event
         const dateSelector = document.querySelector('.date-selector');
         if (dateSelector) {
-            dateSelector.style.display = tabName === 'plugs' ? 'none' : '';
+            dateSelector.style.display = (tabName === 'plugs' || tabName === 'appliance') ? 'none' : '';
         }
 
         window.dispatchEvent(new CustomEvent('tabChanged', { 
@@ -373,7 +373,7 @@ class NavigationManager {
         // Hide date selector on plugs tab
         const dateSelector = document.querySelector('.date-selector');
         if (dateSelector) {
-            dateSelector.style.display = this.currentTab === 'plugs' ? 'none' : '';
+            dateSelector.style.display = this.currentTab === 'plugs' || this.currentTab === 'appliance' ? 'none' : '';
         }
     }
 

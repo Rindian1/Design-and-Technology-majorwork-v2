@@ -14,6 +14,12 @@ class GoalsManager {
                 navigation.switchTab('goals');
                 return;
             }
+            const resetBtn = e.target.closest('#ff-goals-reset');
+            if (resetBtn) {
+                e.stopPropagation();
+                this._resetGoals();
+                return;
+            }
             const btn = e.target.closest('.goal-toggle');
             if (!btn) return;
             const card = btn.closest('[data-goal-id]');
@@ -41,10 +47,6 @@ class GoalsManager {
         const prevPoints = this._prevPoints;
         this._prevPoints = points;
 
-        const ffRunning = this._ff.running;
-        const ffBtnClass = ffRunning ? 'ff-goals-btn running' : 'ff-goals-btn';
-        const ffBtnIcon = ffRunning ? '&#9646;&#9646;' : '&#9654;';
-
         const headerHtml = `
             <div class="goals-header ${prevPoints !== null && points > prevPoints ? 'points-flash' : ''}">
                 <span class="goals-header-icon">\u{1f3c6}</span>
@@ -54,7 +56,6 @@ class GoalsManager {
                 <span class="goals-header-points" id="goals-counter">${prevPoints !== null && points > prevPoints ? prevPoints : points}</span>
                 <div class="ff-controls">
                     <button id="ff-goals-reset" class="ff-goals-reset" title="Reset all goals and points">&#8634;</button>
-                    <button id="ff-goals-btn" class="${ffBtnClass}" title="Fast forward through time">${ffBtnIcon}</button>
                 </div>
             </div>
         `;
@@ -80,8 +81,6 @@ class GoalsManager {
             this._animateCounter(prevPoints, points, 'goals-counter');
             this._triggerConfetti();
         }
-
-        this._bindFFControls();
     }
 
     _updatePointsBadge(points) {
@@ -233,49 +232,24 @@ class GoalsManager {
         return div.innerHTML;
     }
 
-    _bindFFControls() {
-        const ffBtn = document.getElementById('ff-goals-btn');
-        const resetBtn = document.getElementById('ff-goals-reset');
-        if (ffBtn) {
-            ffBtn.onclick = (e) => {
-                e.stopPropagation();
-                if (this._ff.running) {
-                    this._stopFF(true);
-                } else if (!this._ff.started) {
-                    this._startFF();
-                }
-            };
-        }
-        if (resetBtn) {
-            resetBtn.onclick = (e) => {
-                e.stopPropagation();
-                this._resetGoals();
-            };
-        }
-    }
-
     async _startFF() {
         if (this._ff.started) return;
         this._ff.started = true;
 
         if (window.dashboard?.ff?.running) window.dashboard._stopFF();
+        if (typeof recsManager !== 'undefined' && recsManager._ff.running) recsManager._stopFF();
 
-        const btn = document.getElementById('ff-goals-btn');
-        if (!btn) { this._ff.started = false; return; }
-
-        btn.classList.add('running');
-        btn.innerHTML = '&#9646;&#9646;';
+        const ffBtn = document.getElementById('ff-btn');
+        const ffTime = document.getElementById('ff-time');
 
         let range;
         try {
             range = await energyAPI.getDateRange();
         } catch (e) {
-            this._resetFFButton();
             this._ff.started = false;
             return;
         }
         if (!range || !range.earliest) {
-            this._resetFFButton();
             this._ff.started = false;
             return;
         }
@@ -292,19 +266,14 @@ class GoalsManager {
         this._ff.date = navigation.currentDate;
         this._ff.ticking = false;
 
+        if (ffBtn) { ffBtn.classList.add('running'); ffBtn.innerHTML = '&#9646;&#9646;'; }
+        if (ffTime) ffTime.classList.remove('hidden');
+
         this._updateGlobalDate(this._ff.date);
 
         energyAPI.clearCache();
         this._tickFF();
         this._ff.timer = setInterval(() => this._tickFF(), 2000);
-    }
-
-    _resetFFButton() {
-        const btn = document.getElementById('ff-goals-btn');
-        if (btn) {
-            btn.classList.remove('running');
-            btn.innerHTML = '&#9654;';
-        }
     }
 
     _stopFF(manual = true) {
@@ -315,7 +284,10 @@ class GoalsManager {
         this._ff.ticking = false;
         this._ff.started = false;
 
-        this._resetFFButton();
+        const ffBtn = document.getElementById('ff-btn');
+        const ffTime = document.getElementById('ff-time');
+        if (ffBtn) { ffBtn.classList.remove('running'); ffBtn.innerHTML = '&#9654;'; }
+        if (ffTime) ffTime.classList.add('hidden');
 
         if (!manual) {
             this._ff.lingerTimer = setTimeout(() => {
@@ -349,6 +321,12 @@ class GoalsManager {
 
             this._updateGlobalDate(date);
 
+            const ffTime = document.getElementById('ff-time');
+            if (ffTime) {
+                const d = new Date(date + 'T00:00:00');
+                ffTime.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            }
+
             const next = new Date(date);
             next.setDate(next.getDate() + 1);
             this._ff.date = next.toISOString().split('T')[0];
@@ -375,7 +353,6 @@ class GoalsManager {
                 <span class="goals-header-points" id="goals-counter">${points}</span>
                 <div class="ff-controls">
                     <button id="ff-goals-reset" class="ff-goals-reset" title="Reset all goals and points">&#8634;</button>
-                    <button id="ff-goals-btn" class="ff-goals-btn running" title="Fast forward through time">&#9646;&#9646;</button>
                 </div>
             </div>
             <div class="goals-list">${cardsHtml}</div>
@@ -394,8 +371,6 @@ class GoalsManager {
             this._animateCounter(prevPoints, points, 'goals-counter');
             this._triggerConfetti();
         }
-
-        this._bindFFControls();
     }
 
     _updateGlobalDate(dateStr) {

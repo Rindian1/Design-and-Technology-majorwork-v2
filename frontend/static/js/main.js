@@ -120,6 +120,9 @@ class EnergyDashboard {
     window.addEventListener('tabChanged', (e) => {
       const date = navigation.getCurrentDate();
       this._loadTabContent(date, e.detail.tab);
+      if (this.ff.running) this._stopFF();
+      if (recsManager._ff.running) recsManager._stopFF();
+      if (typeof goalsManager !== 'undefined' && goalsManager._ff?.running) goalsManager._stopFF(true);
     });
   }
 
@@ -162,16 +165,40 @@ class EnergyDashboard {
     this.ff = { running: false, timer: null, date: null, hour: 0, dayData: null };
 
     ffBtn.addEventListener('click', () => {
-      if (this.ff.running) {
-        this._stopFF();
-      } else {
-        this._startFF();
+      const tab = navigation.getCurrentTab();
+      if (tab === 'general') {
+        if (recsManager._ff.running) {
+          recsManager._stopFF();
+        } else {
+          if (this.ff.running) this._stopFF();
+          if (typeof goalsManager !== 'undefined' && goalsManager._ff?.running) goalsManager._stopFF(true);
+          recsManager._startFF();
+        }
+      } else if (tab === 'goals') {
+        if (typeof goalsManager !== 'undefined') {
+          if (goalsManager._ff.running) {
+            goalsManager._stopFF(true);
+          } else {
+            if (this.ff.running) this._stopFF();
+            if (recsManager._ff.running) recsManager._stopFF();
+            goalsManager._startFF();
+          }
+        }
+      } else if (tab === 'graph') {
+        if (this.ff.running) {
+          this._stopFF();
+        } else {
+          if (recsManager._ff.running) recsManager._stopFF();
+          if (typeof goalsManager !== 'undefined' && goalsManager._ff?.running) goalsManager._stopFF(true);
+          this._startFF();
+        }
       }
     });
   }
 
   _startFF() {
     if (typeof goalsManager !== 'undefined' && goalsManager._ff?.running) goalsManager._stopFF(true);
+    if (recsManager._ff.running) recsManager._stopFF();
 
     const ffBtn = document.getElementById('ff-btn');
     const ffTime = document.getElementById('ff-time');
@@ -264,13 +291,19 @@ class EnergyDashboard {
 
   _updateFFTime(date, hour) {
     const el = document.getElementById('ff-time');
-    if (!el) return;
-    const d = new Date(date + 'T00:00:00');
-    const mon = d.toLocaleString('en-US', { month: 'short' });
-    const day = d.getDate();
-    const h = hour % 12 || 12;
-    const ap = hour < 12 ? 'am' : 'pm';
-    el.textContent = `${mon} ${day} \u2014 ${h}${ap}`;
+    if (el) {
+      const d = new Date(date + 'T00:00:00');
+      const mon = d.toLocaleString('en-US', { month: 'short' });
+      const day = d.getDate();
+      const h = hour % 12 || 12;
+      const ap = hour < 12 ? 'am' : 'pm';
+      el.textContent = `${mon} ${day} \u2014 ${h}${ap}`;
+    }
+    const dateEl = document.getElementById('current-date');
+    if (dateEl) {
+      const d = new Date(date + 'T00:00:00');
+      dateEl.textContent = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
   }
 
   setupThemeToggle() {
