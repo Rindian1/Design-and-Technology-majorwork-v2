@@ -2,9 +2,9 @@
   {
     "goal_id": "budget_streak",
     "type": "streak",
-    "description_template": "Get a {target} day streak of being {threshold_pct}% below your budget",
+    "description_template": "Get a {target} day streak of staying below your budget",
     "default_target": 5,
-    "default_threshold_pct": 10,
+    "default_threshold_pct": 0,
     "timeframe_label": "{current}/{target} days",
     "completion_reward": 200
   },
@@ -20,10 +20,10 @@
   {
     "goal_id": "weekly_reduction",
     "type": "linear_limit",
-    "description_template": "Spend {threshold_pct}% less energy this week than your weekly budget",
-    "default_target": 100,
-    "default_threshold_pct": 10,
-    "timeframe_label": "{current:.0f}% / {target}%",
+    "description_template": "Stay below your weekly budget this week",
+    "default_target": 7,
+    "default_threshold_pct": 0,
+    "timeframe_label": "${current:.0f} / ${target:.0f}",
     "completion_reward": 300
   },
   {

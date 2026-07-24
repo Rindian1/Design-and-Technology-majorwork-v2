@@ -126,7 +126,7 @@ class GoalsManager {
         for (let i = 0; i < total; i++) {
             if (i < filled) {
                 const isNew = i >= prevFilled;
-                const cls = isNew ? 'seg-block filled new' : 'seg-block filled';
+                const cls = isNew && !this._ff.running ? 'seg-block filled new' : 'seg-block filled';
                 blocks += `<span class="${cls}"></span>`;
             } else {
                 blocks += `<span class="seg-block"></span>`;
@@ -283,14 +283,13 @@ class GoalsManager {
         try {
             await energyAPI.request('/api/goals/demo-init', {
                 method: 'POST',
-                body: JSON.stringify({ date: range.earliest }),
+                body: JSON.stringify({ date: navigation.currentDate }),
             });
         } catch (e) { /* proceed even if demo-init fails */ }
 
         this._ff.dateBeforeFF = navigation.currentDate;
-        this._prevFilled = {};
         this._ff.running = true;
-        this._ff.date = range.earliest;
+        this._ff.date = navigation.currentDate;
         this._ff.ticking = false;
 
         this._updateGlobalDate(this._ff.date);

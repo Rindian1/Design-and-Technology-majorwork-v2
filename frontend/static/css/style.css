@@ -1215,7 +1215,7 @@ body {
   background: #00e676;
 }
 .seg-block.filled.new {
-  animation: seg-pop 0.35s ease-out;
+  animation: seg-pop 0.35s ease-out forwards;
 }
 @keyframes seg-pop {
   0% { background: rgba(255,255,255,0.08); transform: scaleY(1.6); }
@@ -1226,7 +1226,7 @@ body {
   background: #ffab00;
 }
 .seg-block.filled.warning.new {
-  animation: seg-pop-warning 0.35s ease-out;
+  animation: seg-pop-warning 0.35s ease-out forwards;
 }
 @keyframes seg-pop-warning {
   0% { background: rgba(255,255,255,0.08); transform: scaleY(1.6); }

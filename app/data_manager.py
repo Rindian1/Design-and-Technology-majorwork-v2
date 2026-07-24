@@ -946,8 +946,11 @@ class GoalsEngine:
 
             met = False
             if cfg['goal_id'] == 'budget_streak':
-                limit = budget_kwh * (1 - threshold_pct / 100)
-                met = day_total_kwh < limit and day_total_kwh > 0
+                if threshold_pct == 0:
+                    met = day_total_kwh < budget_kwh and day_total_kwh > 0
+                else:
+                    limit = budget_kwh * (1 - threshold_pct / 100)
+                    met = day_total_kwh < limit and day_total_kwh > 0
             elif cfg['goal_id'] == 'offpeak_shift':
                 offpeak_ratio = self._get_offpeak_ratio(records, profile_dict)
                 met = offpeak_ratio >= threshold_pct / 100 and day_total_kwh > 0
@@ -997,22 +1000,35 @@ class GoalsEngine:
             goal.current_value = float(peak_hours)
 
         elif cfg['goal_id'] == 'weekly_reduction':
-            monday = today - timedelta(days=today.weekday())
+            start = goal.timeframe_start or today
+            rate_per_kwh = profile_dict.get('rate_per_kwh', 0.30)
+            budget_kwh = profile_dict.get('budget_kwh', 30)
+            monthly_dollar_budget = budget_kwh * rate_per_kwh * 30
+            weekly_dollar_budget = monthly_dollar_budget / 4.2
+
             week_records = session.query(HeatingUsage).filter(
                 HeatingUsage.user_id == goal.user_id,
-                HeatingUsage.date >= monday,
+                HeatingUsage.date >= start,
                 HeatingUsage.date <= today,
             ).all()
-            week_kwh = sum(r.watt_usage for r in week_records) / 1000
-            weekly_budget = budget_kwh * 7
-            if week_kwh > 0:
-                reduction_pct = max(0, (1 - week_kwh / weekly_budget) * 100)
-                goal.current_value = min(
-                    goal.target_value,
-                    reduction_pct / threshold_pct * goal.target_value
-                )
-            else:
+            cumulative_kwh = sum(r.watt_usage for r in week_records) / 1000
+            cumulative_dollars = cumulative_kwh * rate_per_kwh
+
+            exceeded = weekly_dollar_budget > 0 and cumulative_dollars > weekly_dollar_budget
+
+            if exceeded:
                 goal.current_value = 0.0
+                goal.timeframe_start = today + timedelta(days=1)
+                goal.last_checked_date = None
+            else:
+                goal.current_value = cumulative_dollars
+                goal.target_value = weekly_dollar_budget
+
+            days_elapsed = (today - start).days + 1
+            if days_elapsed >= 7 and not exceeded:
+                goal.completed = True
+                self._award_points(goal.user_id, cfg['completion_reward'], session)
+            return
 
         if goal.current_value >= goal.target_value:
             goal.completed = True

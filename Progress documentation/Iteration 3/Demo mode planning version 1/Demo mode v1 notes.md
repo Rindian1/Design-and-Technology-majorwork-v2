@@ -1,5 +1,8 @@
 Looking better but there are a few problems. The checking for the goals is flawed. 
 
+What im happy with: 
+Home page: 
+- Demo mode for home page is working extremely well. It realistcally shows how the BOTH indicators would look like as the day goes along
 
 What needs improvement:
 Goals page
@@ -29,3 +32,6 @@ Goals page
     This is not the EXACT logic, but just the general idea of how it should work. 
 
     Currently, NONE of the streaks ever light up, even when the daily spending IS less than 10% of the daily budget.
+
+Appliance page: 
+The date selecter should be completely removed out of the appliance page, play feature and all.
