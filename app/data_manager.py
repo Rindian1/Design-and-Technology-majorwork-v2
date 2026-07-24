@@ -940,7 +940,13 @@ class GoalsEngine:
 
         profile_dict = profile if isinstance(profile, dict) else {}
         budget_kwh = profile_dict.get('budget_kwh', 30)
-        threshold_pct = cfg.get('default_threshold_pct', 10)
+
+        tiers = cfg.get('tiers', [])
+        current_tier = goal.tier or 0
+        if current_tier < len(tiers):
+            threshold_pct = tiers[current_tier].get('threshold_pct') or cfg.get('default_threshold_pct', 10)
+        else:
+            threshold_pct = cfg.get('default_threshold_pct', 10)
 
         current = start
         while current <= today:
@@ -1010,7 +1016,14 @@ class GoalsEngine:
             rate_per_kwh = profile_dict.get('rate_per_kwh', 0.30)
             budget_kwh = profile_dict.get('budget_kwh', 30)
             monthly_dollar_budget = budget_kwh * rate_per_kwh * 30
-            weekly_dollar_budget = monthly_dollar_budget / 4.2
+            base_weekly = monthly_dollar_budget / 4.2
+
+            tiers = cfg.get('tiers', [])
+            current_tier = goal.tier or 0
+            budget_scale = 1.0
+            if current_tier < len(tiers):
+                budget_scale = tiers[current_tier].get('budget_scale', 1.0)
+            weekly_dollar_budget = base_weekly * budget_scale
 
             week_records = session.query(HeatingUsage).filter(
                 HeatingUsage.user_id == goal.user_id,
@@ -1042,8 +1055,10 @@ class GoalsEngine:
         profile = session.query(UserProfile).filter(
             UserProfile.user_id == user_id
         ).first()
-        if profile:
-            profile.points_total = (profile.points_total or 0) + points
+        if not profile:
+            profile = UserProfile(user_id=user_id, points_total=0)
+            session.add(profile)
+        profile.points_total = (profile.points_total or 0) + points
 
     def _complete_goal(self, goal, cfg, session):
         tiers = cfg.get('tiers', [])
@@ -1061,7 +1076,8 @@ class GoalsEngine:
             goal.last_checked_date = None
             goal.streak_start_date = None
         else:
-            self._award_points(goal.user_id, cfg['completion_reward'], session)
+            final_reward = tiers[current_tier]['reward'] if current_tier < len(tiers) else cfg['completion_reward']
+            self._award_points(goal.user_id, final_reward, session)
             goal.completed = True
 
     def _render_description(self, cfg, goal, profile):

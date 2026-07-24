@@ -39,10 +39,10 @@
     "timeframe_label": "${current:.0f} / ${target:.0f}",
     "completion_reward": 300,
     "tiers": [
-      { "target": 7, "threshold_pct": 0, "reward": 300, "description_template": "Stay below your weekly budget this week" },
-      { "target": 6, "threshold_pct": 0, "reward": 350, "description_template": "Stay below your weekly budget this week" },
-      { "target": 5, "threshold_pct": 0, "reward": 400, "description_template": "Stay below your weekly budget this week" },
-      { "target": 4, "threshold_pct": 0, "reward": 500, "description_template": "Stay below your weekly budget this week" }
+      { "target": 7, "budget_scale": 1.0, "threshold_pct": 0, "reward": 300, "description_template": "Stay below your weekly budget this week" },
+      { "target": 7, "budget_scale": 0.85, "threshold_pct": 0, "reward": 350, "description_template": "Stay below 85% of your weekly budget this week" },
+      { "target": 7, "budget_scale": 0.70, "threshold_pct": 0, "reward": 400, "description_template": "Stay below 70% of your weekly budget this week" },
+      { "target": 7, "budget_scale": 0.55, "threshold_pct": 0, "reward": 500, "description_template": "Stay below 55% of your weekly budget this week" }
     ]
   },
   {
