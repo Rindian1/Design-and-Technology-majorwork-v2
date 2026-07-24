@@ -28,7 +28,7 @@ class RecommendationsManager {
     }
 
     _applianceHeading() {
-        return '<h1 class="gi-title"><span class="info-heading">Appliance Specific Recommendations' + INFO.icon('appliance_recs') + '</span></h1>';
+        return '<h1 class="gi-title"><span class="info-heading">Appliance Specific Recommendations' + INFO.icon('feat_appliance') + '</span></h1>';
     }
 
     async loadApplianceRecs(date) {
@@ -96,7 +96,7 @@ class RecommendationsManager {
 
         const tipsHtml = tips.length > 0 ? `
             <div class="behaviour-tips">
-                <h3 class="section-subtitle">Behavioural Advice</h3>
+                <h3 class="section-subtitle">Behavioural Advice ${INFO.icon('feat_behavioural')}</h3>
                 <div class="tips-list">
                     ${tips.map(t => `
                         <div class="rec-card severity-${t.severity || 'info'}">
@@ -123,12 +123,13 @@ class RecommendationsManager {
                 <h1 class="gi-title"><span class="info-heading">General Insights${INFO.icon('general_insights')}</span></h1>
                 <div class="gi-section-a">
                     <div class="gi-chart-col">
-                        <h2 class="gi-section-title"><span class="info-heading">Weekly Spending${INFO.icon('weekly_spending')}</span></h2>
+                        <h2 class="gi-section-title"><span class="info-heading">Weekly Spending${INFO.icon('feat_weekly_spending')}</span></h2>
                         <div class="chart-wrap">
                             <canvas id="weekly-chart" role="img" aria-label="Bar chart showing daily energy spending for the past week"></canvas>
                         </div>
                     </div>
                     <div class="gi-insights-col">
+                        <h3 class="gi-section-title"><span class="info-heading">Usage Comparisons${INFO.icon('feat_comparison')}</span></h3>
                         ${positiveHtml}
                         ${negativeHtml}
                         ${!hasPositive && !hasNegative ? `
@@ -152,7 +153,7 @@ class RecommendationsManager {
                 </div>
 
                 <div class="gi-section-c">
-                    <h3 class="gi-section-title"><span class="info-heading">Savings in monthly bill if appliance usage is reduced by:${INFO.icon('savings_scenarios')}</span></h3>
+                    <h3 class="gi-section-title"><span class="info-heading">Savings in monthly bill if appliance usage is reduced by:${INFO.icon('feat_savings')}</span></h3>
                     <div class="gi-scenarios">
                         <div class="gi-scenario-card">
                             <span class="gi-scenario-pct">2%</span>
@@ -173,7 +174,7 @@ class RecommendationsManager {
                 </div>
 
                 <div class="gi-section-d">
-                    <h3 class="gi-section-title"><span class="info-heading">All-Time Spending Trend${INFO.icon('alltime_trend')}</span></h3>
+                    <h3 class="gi-section-title"><span class="info-heading">All-Time Spending Trend${INFO.icon('feat_trend')}</span></h3>
                     <div class="chart-wrap">
                         <canvas id="trend-chart" role="img" aria-label="Line chart showing average daily spending over time"></canvas>
                     </div>

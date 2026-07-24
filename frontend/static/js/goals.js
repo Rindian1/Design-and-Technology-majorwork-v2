@@ -63,7 +63,7 @@ class GoalsManager {
         const cardsHtml = goals.map(g => this._renderCard(g)).join('');
 
         this._container.innerHTML = `
-            <h1 class="gi-title"><span class="info-heading">Goals${INFO.icon('points')}</span></h1>
+            <h1 class="gi-title"><span class="info-heading">Goals${INFO.icon('feat_goals')}</span></h1>
             ${headerHtml}
             <div class="goals-list">${cardsHtml}</div>
         `;
@@ -344,7 +344,7 @@ class GoalsManager {
         const cardsHtml = goals.map(g => this._renderCard(g)).join('');
 
         this._container.innerHTML = `
-            <h1 class="gi-title"><span class="info-heading">Goals${INFO.icon('points')}</span></h1>
+            <h1 class="gi-title"><span class="info-heading">Goals${INFO.icon('feat_goals')}</span></h1>
             <div class="goals-header">
                 <span class="goals-header-icon">\u{1f3c6}</span>
                 <div>

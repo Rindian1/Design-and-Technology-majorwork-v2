@@ -170,7 +170,8 @@
     const statText = hasStat ? `$${plug.cost_per_hour.toFixed(2)}/hr` : '--/hr';
     const hasWatts = plug.current_power_mw !== null && plug.current_power_mw !== undefined;
     const wattsText = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W` : '-- W';
-    const wattsHtml = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W${INFO.icon('w')}` : '-- W';
+    const wattsHtml = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W` : '-- W';
+    const costHtml = hasStat ? `$${plug.cost_per_hour.toFixed(2)}/hr` : '--/hr';
 
     card.innerHTML = `
       <div class="plug-card-left">
@@ -204,7 +205,7 @@
         </div>
       </div>
       <div class="plug-stats">
-        <div class="plug-stat ${hasStat ? '' : 'dim'}">${statText}</div>
+        <div class="plug-stat ${hasStat ? '' : 'dim'}">${costHtml}</div>
         <div class="plug-stat-sub ${hasWatts ? '' : 'dim'}">${wattsHtml}</div>
       </div>
     `;
@@ -235,6 +236,10 @@
       e.stopPropagation();
       menuDropdown.classList.add('hidden');
       openEditModal(plug);
+    });
+
+    card.querySelectorAll('.info-trigger').forEach(el => {
+      el.addEventListener('click', (e) => e.stopPropagation());
     });
 
     return card;
@@ -269,11 +274,10 @@
     const hasStat = plug.cost_per_hour !== null && plug.cost_per_hour !== undefined;
     const hasWatts = plug.current_power_mw !== null && plug.current_power_mw !== undefined;
     const statEl = stats.querySelector('.plug-stat');
-    statEl.textContent = hasStat ? `$${plug.cost_per_hour.toFixed(2)}/hr` : '--/hr';
+    statEl.innerHTML = hasStat ? `$${plug.cost_per_hour.toFixed(2)}/hr` : '--/hr';
     statEl.className = `plug-stat ${hasStat ? '' : 'dim'}`;
     const subEl = stats.querySelector('.plug-stat-sub');
-    subEl.textContent = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W` : '-- W';
-    subEl.innerHTML = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W${INFO.icon('w')}` : '-- W';
+    subEl.innerHTML = hasWatts ? `${(plug.current_power_mw / 1000).toFixed(0)} W` : '-- W';
     subEl.className = `plug-stat-sub ${hasWatts ? '' : 'dim'}`;
 
     const menuRemove = card.querySelector('.plug-menu-remove');

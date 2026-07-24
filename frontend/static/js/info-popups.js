@@ -3,10 +3,63 @@
 
   const SMART_FEATURES = new Set([
     'forecasted_monthly', 'savings_scenarios', 'alltime_trend',
-    'est_annual_cost', 'payback_period', 'appliance_recs', 'general_insights'
+    'est_annual_cost', 'payback_period', 'appliance_recs', 'general_insights',
+    'weekly_spending', 'points',
+    'plug_power', 'plug_schedule', 'plug_toggle'
+  ]);
+
+  const FEATURES = new Set([
+    'feat_gauge', 'feat_hourly_chart', 'feat_mini_stats',
+    'feat_weekly_spending', 'feat_comparison', 'feat_savings',
+    'feat_trend', 'feat_behavioural', 'feat_appliance',
+    'feat_goals', 'feat_plugs'
   ]);
 
   const INFO_DEFS = {
+    feat_gauge: {
+      term: 'Daily Spending Gauge',
+      definition: 'Visualises your estimated daily energy spending against your configured budget. The arc fills from green (under budget) to red (over budget).'
+    },
+    feat_hourly_chart: {
+      term: 'Hourly Usage Chart',
+      definition: 'Displays your energy usage for each hour of the day. Bar colours correspond to your electricity tariff period, helping you see when you use the most energy.'
+    },
+    feat_mini_stats: {
+      term: 'Daily Stats',
+      definition: 'Summarises your daily energy usage: total consumption, peak demand, average power draw, and estimated cost.'
+    },
+    feat_weekly_spending: {
+      term: 'Weekly Spending Chart',
+      definition: 'Bar chart showing your daily energy costs for the past 7 days, colour-coded by magnitude so you can spot high-usage days.'
+    },
+    feat_comparison: {
+      term: 'Usage Comparisons',
+      definition: 'Compares today\'s usage against last week and your 7-day average to track whether your usage is improving.'
+    },
+    feat_savings: {
+      term: 'Savings Scenarios',
+      definition: 'Shows estimated monthly savings if you reduce your energy usage by 2%, 4%, or 6%, helping you set realistic reduction targets.'
+    },
+    feat_trend: {
+      term: 'Spending Trend Chart',
+      definition: 'Line chart tracking your average daily energy cost over time, revealing long-term trends in your spending habits.'
+    },
+    feat_behavioural: {
+      term: 'Behavioural Advice',
+      definition: 'Personalised energy-saving tips generated from your actual usage patterns, designed to help you adopt more efficient habits.'
+    },
+    feat_appliance: {
+      term: 'Appliance Recommendations',
+      definition: 'Suggests energy-efficient appliance upgrades based on your usage data, with estimated costs, annual savings, and payback periods.'
+    },
+    feat_goals: {
+      term: 'Energy Goals',
+      definition: 'Set and track energy-saving goals to earn points. Goals include daily streaks and weekly reduction targets, with progress shown as segmented or linear bars.'
+    },
+    feat_plugs: {
+      term: 'Smart Plug Control',
+      definition: 'Monitor and control your smart plugs in real-time. View current power draw, toggle plugs on or off, and set automated schedules.'
+    },
     kw: {
       term: 'kW (kilowatt)',
       definition: 'A measure of how much power an appliance uses at one moment. Think of it like the speed of electricity flow. A typical heater uses about 2 kW.'
@@ -82,11 +135,25 @@
     points: {
       term: 'Points',
       definition: 'Points you earn by completing energy-saving goals. Track your progress and compete with yourself to build better habits.'
+    },
+    plug_power: {
+      term: 'Real-time Power',
+      definition: 'The current electricity your connected device is drawing, shown in watts. Watch how it changes as you turn appliances on or off.'
+    },
+    plug_schedule: {
+      term: 'Plug Schedule',
+      definition: 'Set automatic on and off times for your plug. Schedules run daily, helping you save energy without thinking about it.'
+    },
+    plug_toggle: {
+      term: 'Plug Toggle',
+      definition: 'Turn your smart plug on or off remotely. The plug communicates with your device through your home Wi-Fi network.'
     }
   };
 
   function infoIcon(key) {
-    var cls = SMART_FEATURES.has(key) ? 'info-trigger info-trigger-smart' : 'info-trigger';
+    var cls = 'info-trigger';
+    if (SMART_FEATURES.has(key)) cls += ' info-trigger-smart';
+    else if (FEATURES.has(key)) cls += ' info-trigger-feature';
     return '<span class="' + cls + '" data-info-key="' + key + '" tabindex="0" role="button" aria-label="More info about this term">\u24D8</span>';
   }
 
@@ -107,10 +174,11 @@
     if (!def) return;
 
     var isSmart = SMART_FEATURES.has(key);
-    var tagHtml = isSmart ? '<div class="info-popup-tag">Smart Feature</div>' : '';
+    var isFeature = FEATURES.has(key);
+    var tagHtml = isSmart ? '<div class="info-popup-tag">Smart Feature</div>' : isFeature ? '<div class="info-popup-tag info-popup-tag-feature">Feature</div>' : '';
 
     var popup = document.createElement('div');
-    popup.className = 'info-popup' + (isSmart ? ' info-popup-smart' : '');
+    popup.className = 'info-popup' + (isSmart ? ' info-popup-smart' : '') + (isFeature ? ' info-popup-feature' : '');
     popup.innerHTML = tagHtml +
                       '<div class="info-popup-term">' + def.term + '</div>' +
                       '<div class="info-popup-def">' + def.definition + '</div>';
@@ -120,7 +188,7 @@
     var top = rect.bottom + 8;
     var left = rect.left;
 
-    popup.style.position = 'absolute';
+    popup.style.position = 'fixed';
     popup.style.top = top + 'px';
     popup.style.left = left + 'px';
 
