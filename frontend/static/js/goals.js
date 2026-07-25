@@ -3,7 +3,8 @@ class GoalsManager {
         this._container = document.getElementById('goals-container');
         this._prevPoints = null;
         this._prevFilled = null;
-        this._ff = { running: false, timer: null, date: null, ticking: false, started: false, lingerTimer: null, dateBeforeFF: null };
+        this._prevGoalStates = null;
+        this._ff = { running: false };
         this._setupDelegation();
     }
 
@@ -20,6 +21,12 @@ class GoalsManager {
                 this._resetGoals();
                 return;
             }
+            const notif = e.target.closest('.goal-notification');
+            if (notif) {
+                if (typeof navigation !== 'undefined') navigation.switchTab('goals');
+                notif.remove();
+                return;
+            }
             const btn = e.target.closest('.goal-toggle');
             if (!btn) return;
             const card = btn.closest('[data-goal-id]');
@@ -34,7 +41,11 @@ class GoalsManager {
         this._showLoading();
 
         try {
-            const data = await energyAPI.request(`/api/goals?_=${Date.now()}`);
+            const targetDate = (typeof navigation !== 'undefined') ? navigation.getCurrentDate() : undefined;
+            const url = targetDate
+                ? `/api/goals?date=${targetDate}&_=${Date.now()}`
+                : `/api/goals?_=${Date.now()}`;
+            const data = await energyAPI.request(url);
             this._render(data);
         } catch (err) {
             this._showError('Failed to load goals.');
@@ -239,107 +250,80 @@ class GoalsManager {
         return div.innerHTML;
     }
 
-    async _startFF() {
-        if (this._ff.started) return;
-        this._ff.started = true;
-
-        if (window.dashboard?.ff?.running) window.dashboard._stopFF();
-        if (typeof recsManager !== 'undefined' && recsManager._ff.running) recsManager._stopFF();
-
-        const ffBtn = document.getElementById('ff-btn');
-        const ffTime = document.getElementById('ff-time');
-
-        let range;
-        try {
-            range = await energyAPI.getDateRange();
-        } catch (e) {
-            this._ff.started = false;
-            return;
-        }
-        if (!range || !range.earliest) {
-            this._ff.started = false;
-            return;
-        }
-
-        try {
-            await energyAPI.request('/api/goals/demo-init', {
-                method: 'POST',
-                body: JSON.stringify({ date: navigation.currentDate }),
+    _checkNotifications(goals) {
+        if (!this._prevGoalStates) {
+            this._prevGoalStates = {};
+            goals.forEach(g => {
+                this._prevGoalStates[g.goal_id] = {
+                    completed: g.completed,
+                    current_streak: g.current_streak,
+                };
             });
-        } catch (e) { /* proceed even if demo-init fails */ }
+            return;
+        }
 
-        this._ff.dateBeforeFF = navigation.currentDate;
-        this._ff.running = true;
-        this._ff.date = navigation.currentDate;
-        this._ff.ticking = false;
+        goals.forEach(g => {
+            const prev = this._prevGoalStates[g.goal_id];
+            if (!prev) {
+                this._prevGoalStates[g.goal_id] = {
+                    completed: g.completed,
+                    current_streak: g.current_streak,
+                };
+                return;
+            }
 
-        if (ffBtn) { ffBtn.classList.add('running'); ffBtn.innerHTML = '&#9646;&#9646;'; }
-        if (ffTime) ffTime.classList.remove('hidden');
+            if (!prev.completed && g.completed) {
+                this._showNotification('success', g.description);
+            } else if (prev.current_streak > 0 && g.current_streak === 0 && !g.completed) {
+                this._showNotification('failure', g.description);
+            }
 
-        this._updateGlobalDate(this._ff.date);
+            this._prevGoalStates[g.goal_id] = {
+                completed: g.completed,
+                current_streak: g.current_streak,
+            };
+        });
+    }
 
-        energyAPI.clearCache();
-        this._tickFF();
-        this._ff.timer = setInterval(() => this._tickFF(), 2000);
+    _showNotification(type, description) {
+        let container = document.getElementById('goal-notifications');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'goal-notifications';
+            document.body.appendChild(container);
+        }
+
+        const notif = document.createElement('div');
+        notif.className = `goal-notification goal-notification-${type}`;
+
+        const icon = type === 'success' ? '&#127881;' : '&#9888;';
+        const title = type === 'success'
+            ? 'Congratulations! Goal completed!'
+            : 'Goal was not met and has been reset. Try again!';
+
+        notif.innerHTML = `
+            <div class="goal-notification-icon">${icon}</div>
+            <div class="goal-notification-body">
+                <div class="goal-notification-title">${title}</div>
+                <div class="goal-notification-desc">${this._escapeHtml(description)}</div>
+            </div>
+        `;
+
+        container.appendChild(notif);
+        requestAnimationFrame(() => notif.classList.add('show'));
+
+        setTimeout(() => {
+            notif.classList.remove('show');
+            setTimeout(() => notif.remove(), 400);
+        }, 5000);
+    }
+
+    _startFF() {
+        if (typeof dashboard !== 'undefined') dashboard._startDayFF();
     }
 
     _stopFF(manual = true) {
-        clearInterval(this._ff.timer);
-        clearTimeout(this._ff.lingerTimer);
-        this._ff.running = false;
-        this._ff.timer = null;
-        this._ff.ticking = false;
-        this._ff.started = false;
-
-        const ffBtn = document.getElementById('ff-btn');
-        const ffTime = document.getElementById('ff-time');
-        if (ffBtn) { ffBtn.classList.remove('running'); ffBtn.innerHTML = '&#9654;'; }
-        if (ffTime) ffTime.classList.add('hidden');
-
-        if (!manual) {
-            this._ff.lingerTimer = setTimeout(() => {
-                if (navigation) {
-                    navigation.navigateToDate(this._ff.dateBeforeFF);
-                }
-            }, 3000);
-        }
-    }
-
-    async _tickFF() {
-        if (this._ff.ticking) return;
-        this._ff.ticking = true;
-
-        try {
-            const { date } = this._ff;
-            if (!date) { this._stopFF(); return; }
-
-            const range = await energyAPI.getDateRange().catch(() => null);
-            if (!range || date > range.latest) { this._stopFF(false); return; }
-            if (!this._ff.running) return;
-
-            try {
-                energyAPI.clearCache();
-                const data = await energyAPI.request(`/api/goals?date=${date}&_=${Date.now()}`);
-                if (!this._ff.running) return;
-                this._renderFF(data);
-            } catch (e) {
-                console.error('FF goals tick failed:', e);
-            }
-
-            this._updateGlobalDate(date);
-
-            const ffTime = document.getElementById('ff-time');
-            if (ffTime) {
-                const d = new Date(date + 'T00:00:00');
-                ffTime.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-            }
-
-            const next = new Date(date);
-            next.setDate(next.getDate() + 1);
-            this._ff.date = next.toISOString().split('T')[0];
-        } finally {
-            this._ff.ticking = false;
-        }
+        if (typeof dashboard !== 'undefined') dashboard._stopDayFF(manual);
     }
 
     _renderFF(data) {
@@ -382,17 +366,10 @@ class GoalsManager {
         }
     }
 
-    _updateGlobalDate(dateStr) {
-        if (navigation) {
-            navigation.currentDate = dateStr;
-            navigation.updateDateDisplay();
-            navigation.updateNavigationButtons();
-        }
-    }
-
     async _resetGoals() {
-        if (this._ff.running) this._stopFF(true);
+        if (typeof dashboard !== 'undefined' && dashboard._dayFF.running) dashboard._stopDayFF(true);
         this._prevFilled = {};
+        this._prevGoalStates = null;
         try {
             await energyAPI.request('/api/goals/reset', { method: 'POST' });
             energyAPI.clearCache();

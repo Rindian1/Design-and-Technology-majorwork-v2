@@ -1,8 +1,7 @@
 Goals page 
     1) Goals should be organised so that the goals selected by the user are at the top  
 
-    2) Make it so that the homepage FF is linked to the goals FF. if the user clicks the FF button on the home page, the goals page should be fast fowarding at the same rate. Basically make it so that the FF button on the home page controls the FF button on the goals page, and vice versa. This will allow the user to see goals progress in real time from the home page, which is how it would realistically work in real life.
-
+    2) Add another fast foward button on the home page. Which should fast foward by one day (the same rate as the fast foward button on the goals page) Then, link these these two buttons with the fast foward button on the goals page, ie if the user clicks the fast foward button on the home page, the fast foward button on the goals page should also be clicked, at the same date e.t.c. The goals should also be updated as this fast fowwards, regardless of whether the user is on the goals page or not.
     3) Add a notifications feature whenever a goal is finished, or failed. 
         - This notification should appear in the top right corner of the screen, regardless of which page the user is on. This also means that regardless of which page the user is on.  
         - The notification should be a simple pop-up that appears for a few seconds and then disappears. 

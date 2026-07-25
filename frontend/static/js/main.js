@@ -121,8 +121,8 @@ class EnergyDashboard {
       const date = navigation.getCurrentDate();
       this._loadTabContent(date, e.detail.tab);
       if (this.ff.running) this._stopFF();
+      if (this._dayFF.running) this._stopDayFF(true);
       if (recsManager._ff.running) recsManager._stopFF();
-      if (typeof goalsManager !== 'undefined' && goalsManager._ff?.running) goalsManager._stopFF(true);
     });
   }
 
@@ -159,10 +159,24 @@ class EnergyDashboard {
 
   setupFastForward() {
     const ffBtn = document.getElementById('ff-btn');
+    const ffDayBtn = document.getElementById('ff-day-btn');
     const ffTime = document.getElementById('ff-time');
     if (!ffBtn) return;
 
     this.ff = { running: false, timer: null, date: null, hour: 0, dayData: null };
+    this._dayFF = { running: false, timer: null, date: null, dateBeforeFF: null, lingerTimer: null, ticking: false };
+
+    if (ffDayBtn) {
+      ffDayBtn.addEventListener('click', () => {
+        if (this._dayFF.running) {
+          this._stopDayFF(true);
+        } else {
+          if (this.ff.running) this._stopFF();
+          if (recsManager._ff.running) recsManager._stopFF();
+          this._startDayFF();
+        }
+      });
+    }
 
     ffBtn.addEventListener('click', () => {
       const tab = navigation.getCurrentTab();
@@ -171,29 +185,147 @@ class EnergyDashboard {
           recsManager._stopFF();
         } else {
           if (this.ff.running) this._stopFF();
-          if (typeof goalsManager !== 'undefined' && goalsManager._ff?.running) goalsManager._stopFF(true);
+          if (this._dayFF.running) this._stopDayFF(true);
           recsManager._startFF();
         }
       } else if (tab === 'goals') {
-        if (typeof goalsManager !== 'undefined') {
-          if (goalsManager._ff.running) {
-            goalsManager._stopFF(true);
-          } else {
-            if (this.ff.running) this._stopFF();
-            if (recsManager._ff.running) recsManager._stopFF();
-            goalsManager._startFF();
-          }
+        if (this._dayFF.running) {
+          this._stopDayFF(true);
+        } else {
+          if (this.ff.running) this._stopFF();
+          if (recsManager._ff.running) recsManager._stopFF();
+          this._startDayFF();
         }
       } else if (tab === 'graph') {
         if (this.ff.running) {
           this._stopFF();
         } else {
           if (recsManager._ff.running) recsManager._stopFF();
-          if (typeof goalsManager !== 'undefined' && goalsManager._ff?.running) goalsManager._stopFF(true);
+          if (this._dayFF.running) this._stopDayFF(true);
           this._startFF();
         }
       }
     });
+  }
+
+  async _startDayFF() {
+    if (this._dayFF.running) return;
+
+    const ffBtn = document.getElementById('ff-btn');
+    const ffDayBtn = document.getElementById('ff-day-btn');
+    const ffTime = document.getElementById('ff-time');
+
+    try {
+      await energyAPI.request('/api/goals/demo-init', {
+        method: 'POST',
+        body: JSON.stringify({ date: navigation.currentDate }),
+      });
+    } catch (e) { /* proceed even if demo-init fails */ }
+
+    if (typeof goalsManager !== 'undefined') {
+      goalsManager._ff.running = true;
+      goalsManager._prevFilled = {};
+      goalsManager._prevGoalStates = null;
+    }
+
+    this._dayFF.dateBeforeFF = navigation.currentDate;
+    this._dayFF.date = navigation.currentDate;
+    this._dayFF.running = true;
+    energyAPI.clearCache();
+
+    if (ffDayBtn) { ffDayBtn.classList.add('running'); ffDayBtn.innerHTML = '&#9646;&#9646;'; }
+    if (ffBtn) { ffBtn.classList.add('running'); ffBtn.innerHTML = '&#9646;&#9646;'; }
+    if (ffTime) ffTime.classList.remove('hidden');
+
+    this._updateDayFFDate(this._dayFF.date);
+    this._tickDayFF();
+    this._dayFF.timer = setInterval(() => this._tickDayFF(), 2000);
+  }
+
+  _stopDayFF(manual = true) {
+    clearInterval(this._dayFF.timer);
+    clearTimeout(this._dayFF.lingerTimer);
+    this._dayFF.running = false;
+    this._dayFF.timer = null;
+    this._dayFF.ticking = false;
+
+    if (typeof goalsManager !== 'undefined') goalsManager._ff.running = false;
+
+    const ffBtn = document.getElementById('ff-btn');
+    const ffDayBtn = document.getElementById('ff-day-btn');
+    const ffTime = document.getElementById('ff-time');
+    if (ffDayBtn) { ffDayBtn.classList.remove('running'); ffDayBtn.innerHTML = '&#9193;'; }
+    if (ffBtn) { ffBtn.classList.remove('running'); ffBtn.innerHTML = '&#9654;'; }
+    if (ffTime) ffTime.classList.add('hidden');
+
+    if (!manual && this._dayFF.dateBeforeFF) {
+      this._dayFF.lingerTimer = setTimeout(() => {
+        if (navigation) {
+          navigation.navigateToDate(this._dayFF.dateBeforeFF);
+        }
+      }, 3000);
+    }
+  }
+
+  async _tickDayFF() {
+    if (!this._dayFF.running || this._dayFF.ticking) return;
+    this._dayFF.ticking = true;
+
+    try {
+      const { date } = this._dayFF;
+      if (!date) { this._stopDayFF(); return; }
+
+      const range = await energyAPI.getDateRange().catch(() => null);
+      if (!range || date > range.latest) { this._stopDayFF(false); return; }
+      if (!this._dayFF.running) return;
+
+      const activeTab = navigation.getCurrentTab();
+      if (activeTab === 'graph') {
+        try {
+          const [chartData, stats] = await Promise.all([
+            energyAPI.getDailyData(date),
+            energyAPI.getStatistics(date)
+          ]);
+          gaugeManager.currentData = chartData;
+          gaugeManager.currentStats = stats;
+          gaugeManager.render();
+        } catch (e) { /* skip graph render on error */ }
+      }
+
+      if (typeof goalsManager !== 'undefined' && this._dayFF.running) {
+        try {
+          energyAPI.clearCache();
+          const data = await energyAPI.request(`/api/goals?date=${date}&_=${Date.now()}`);
+          if (!this._dayFF.running) return;
+          goalsManager._renderFF(data);
+          goalsManager._checkNotifications(data.goals || []);
+        } catch (e) {
+          console.error('Day FF goals tick failed:', e);
+        }
+      }
+
+      this._updateDayFFDate(date);
+
+      const ffTime = document.getElementById('ff-time');
+      if (ffTime) {
+        const d = new Date(date + 'T00:00:00');
+        ffTime.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      }
+
+      const next = new Date(date);
+      next.setDate(next.getDate() + 1);
+      this._dayFF.date = next.toISOString().split('T')[0];
+    } finally {
+      this._dayFF.ticking = false;
+    }
+  }
+
+  _updateDayFFDate(dateStr) {
+    if (navigation) {
+      navigation.currentDate = dateStr;
+      navigation.updateDateDisplay();
+      navigation.updateNavigationButtons();
+    }
   }
 
   _startFF() {
