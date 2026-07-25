@@ -423,6 +423,7 @@ class GoalsManager {
 
     async _resetGoals() {
         if (typeof dashboard !== 'undefined' && dashboard._dayFF.running) dashboard._stopDayFF(true);
+        if (typeof dashboard !== 'undefined') dashboard._dayFF.claimableStop = false;
         this._prevFilled = {};
         this._prevGoalStates = null;
         try {

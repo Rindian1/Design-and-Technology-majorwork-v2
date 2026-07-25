@@ -164,7 +164,7 @@ class EnergyDashboard {
     if (!ffBtn) return;
 
     this.ff = { running: false, timer: null, date: null, hour: 0, dayData: null };
-    this._dayFF = { running: false, timer: null, date: null, dateBeforeFF: null, lingerTimer: null, ticking: false };
+    this._dayFF = { running: false, timer: null, date: null, dateBeforeFF: null, lingerTimer: null, ticking: false, claimableStop: false };
 
     if (ffDayBtn) {
       ffDayBtn.addEventListener('click', () => {
@@ -215,12 +215,15 @@ class EnergyDashboard {
     const ffDayBtn = document.getElementById('ff-day-btn');
     const ffTime = document.getElementById('ff-time');
 
-    try {
-      await energyAPI.request('/api/goals/demo-init', {
-        method: 'POST',
-        body: JSON.stringify({ date: navigation.currentDate }),
-      });
-    } catch (e) { /* proceed even if demo-init fails */ }
+    if (!this._dayFF.claimableStop) {
+      try {
+        await energyAPI.request('/api/goals/demo-init', {
+          method: 'POST',
+          body: JSON.stringify({ date: navigation.currentDate }),
+        });
+      } catch (e) { /* proceed even if demo-init fails */ }
+    }
+    this._dayFF.claimableStop = false;
 
     if (typeof goalsManager !== 'undefined') {
       goalsManager._ff.running = true;
@@ -300,6 +303,7 @@ class EnergyDashboard {
           goalsManager._renderFF(data);
           goalsManager._checkNotifications(data.goals || []);
           if (data.goals && data.goals.some(g => g.pending_claim)) {
+            this._dayFF.claimableStop = true;
             this._stopDayFF(true);
             return;
           }
