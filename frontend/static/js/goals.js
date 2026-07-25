@@ -257,6 +257,7 @@ class GoalsManager {
                 this._prevGoalStates[g.goal_id] = {
                     completed: g.completed,
                     current_streak: g.current_streak,
+                    tier: g.tier,
                 };
             });
             return;
@@ -268,12 +269,15 @@ class GoalsManager {
                 this._prevGoalStates[g.goal_id] = {
                     completed: g.completed,
                     current_streak: g.current_streak,
+                    tier: g.tier,
                 };
                 return;
             }
 
             if (!prev.completed && g.completed) {
                 this._showNotification('success', g.description);
+            } else if (g.tier !== undefined && prev.tier !== undefined && g.tier > prev.tier) {
+                this._showNotification('tier', g.description);
             } else if (prev.current_streak > 0 && g.current_streak === 0 && !g.completed) {
                 this._showNotification('failure', g.description);
             }
@@ -281,6 +285,7 @@ class GoalsManager {
             this._prevGoalStates[g.goal_id] = {
                 completed: g.completed,
                 current_streak: g.current_streak,
+                tier: g.tier,
             };
         });
     }
@@ -296,10 +301,14 @@ class GoalsManager {
         const notif = document.createElement('div');
         notif.className = `goal-notification goal-notification-${type}`;
 
-        const icon = type === 'success' ? '&#127881;' : '&#9888;';
-        const title = type === 'success'
-            ? 'Congratulations! Goal completed!'
-            : 'Goal was not met and has been reset. Try again!';
+        const icons = { success: '&#127881;', tier: '&#127942;', failure: '&#9888;' };
+        const titles = {
+            success: 'Congratulations! Goal completed!',
+            tier: 'Goal tier advanced! Keep going!',
+            failure: 'Goal was not met and has been reset. Try again!',
+        };
+        const icon = icons[type] || icons.failure;
+        const title = titles[type] || titles.failure;
 
         notif.innerHTML = `
             <div class="goal-notification-icon">${icon}</div>

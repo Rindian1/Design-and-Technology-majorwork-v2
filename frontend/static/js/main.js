@@ -239,7 +239,7 @@ class EnergyDashboard {
 
     this._updateDayFFDate(this._dayFF.date);
     this._tickDayFF();
-    this._dayFF.timer = setInterval(() => this._tickDayFF(), 2000);
+    this._dayFF.timer = setInterval(() => this._tickDayFF(), 1000);
   }
 
   _stopDayFF(manual = true) {

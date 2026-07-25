@@ -1351,6 +1351,9 @@ body {
 .goal-notification-failure {
   border-color: rgba(255,82,82,0.3);
 }
+.goal-notification-tier {
+  border-color: rgba(255,171,0,0.3);
+}
 .goal-notification-icon {
   font-size: 20px;
   flex-shrink: 0;
@@ -1361,6 +1364,9 @@ body {
 }
 .goal-notification-failure .goal-notification-icon {
   color: #ff5252;
+}
+.goal-notification-tier .goal-notification-icon {
+  color: #ffab00;
 }
 .goal-notification-body {
   flex: 1;
@@ -1377,6 +1383,9 @@ body {
 }
 .goal-notification-failure .goal-notification-title {
   color: #ff5252;
+}
+.goal-notification-tier .goal-notification-title {
+  color: #ffab00;
 }
 .goal-notification-desc {
   font-size: 11px;
