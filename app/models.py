@@ -53,6 +53,7 @@ class UserGoal(Base):
     completed = Column(Boolean, nullable=False, default=False)
     last_checked_date = Column(Date, nullable=True)
     tier = Column(Integer, nullable=False, default=0)
+    pending_claim = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False)
 
     user = relationship('User')
@@ -246,6 +247,10 @@ class DatabaseSession:
                 pass
             try:
                 conn.execute(text("ALTER TABLE user_goals ADD COLUMN tier INTEGER DEFAULT 0"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE user_goals ADD COLUMN pending_claim BOOLEAN DEFAULT 0"))
             except Exception:
                 pass
             conn.commit()

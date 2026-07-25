@@ -34,6 +34,13 @@ class GoalsManager {
             const goalId = card.getAttribute('data-goal-id');
             if (goalId) this.toggleGoal(goalId);
         });
+
+        document.addEventListener('click', (e) => {
+            const claimBtn = e.target.closest('.goal-claim-btn');
+            if (!claimBtn) return;
+            const goalId = claimBtn.getAttribute('data-goal-id');
+            if (goalId) this.claimGoal(goalId);
+        });
     }
 
     async loadGoals() {
@@ -104,6 +111,7 @@ class GoalsManager {
     _renderCard(goal) {
         const isActive = goal.status === 'active';
         const isCompleted = goal.completed;
+        const isClaimable = goal.pending_claim;
         const activeClass = isActive && !isCompleted ? '' : 'inactive';
         const completedClass = isCompleted ? 'completed' : '';
 
@@ -115,6 +123,20 @@ class GoalsManager {
             ? `<div class="goal-tier">Tier ${goal.tier + 1}/${goal.max_tiers}</div>`
             : '';
 
+        const rewardHtml = isClaimable
+            ? `<div class="goal-metric-box reward claimable">
+                   <button class="goal-claim-btn" data-goal-id="${goal.goal_id}">
+                       <div class="goal-metric-value">Claim!</div>
+                       <div class="goal-metric-label">+${goal.completion_reward} pts</div>
+                   </button>
+                   ${tierHtml}
+               </div>`
+            : `<div class="goal-metric-box reward">
+                   <div class="goal-metric-value">+${goal.completion_reward}</div>
+                   <div class="goal-metric-label">Reward</div>
+                   ${tierHtml}
+               </div>`;
+
         return `
             <div class="goal-card ${activeClass}" data-goal-id="${goal.goal_id}">
                 <div class="goal-activation">
@@ -125,11 +147,7 @@ class GoalsManager {
                     <div class="goal-description ${completedClass}">${this._escapeHtml(goal.description)}</div>
                     <div class="goal-progress">${progressHtml}</div>
                 </div>
-                <div class="goal-metric-box reward">
-                    <div class="goal-metric-value">+${goal.completion_reward}</div>
-                    <div class="goal-metric-label">Reward</div>
-                    ${tierHtml}
-                </div>
+                ${rewardHtml}
             </div>
         `;
     }
@@ -227,6 +245,28 @@ class GoalsManager {
         }
     }
 
+    async claimGoal(goalId) {
+        try {
+            const result = await energyAPI.request(`/api/goals/${goalId}/claim`, {
+                method: 'POST',
+                body: '{}',
+            });
+            if (result.status === 'ok') {
+                const prevPoints = this._prevPoints;
+                await this.loadGoals();
+                if (result.reward && prevPoints !== null) {
+                    const newPoints = prevPoints + result.reward;
+                    this._prevPoints = newPoints;
+                    this._updatePointsBadge(newPoints);
+                    this._animateCounter(prevPoints, newPoints, 'goals-counter');
+                    this._triggerConfetti();
+                }
+            }
+        } catch (err) {
+            console.error('Failed to claim goal:', err);
+        }
+    }
+
     _showLoading() {
         this._container.innerHTML = `
             <div class="recs-state">
@@ -258,6 +298,7 @@ class GoalsManager {
                     completed: g.completed,
                     current_streak: g.current_streak,
                     tier: g.tier,
+                    pending_claim: g.pending_claim,
                 };
             });
             return;
@@ -270,6 +311,7 @@ class GoalsManager {
                     completed: g.completed,
                     current_streak: g.current_streak,
                     tier: g.tier,
+                    pending_claim: g.pending_claim,
                 };
                 return;
             }
@@ -278,7 +320,9 @@ class GoalsManager {
                 this._showNotification('success', g.description);
             } else if (g.tier !== undefined && prev.tier !== undefined && g.tier > prev.tier) {
                 this._showNotification('tier', g.description);
-            } else if (prev.current_streak > 0 && g.current_streak === 0 && !g.completed) {
+            } else if (!prev.pending_claim && g.pending_claim) {
+                this._showNotification('claim', g.description);
+            } else if (prev.current_streak > 0 && g.current_streak === 0 && !g.completed && !g.pending_claim) {
                 this._showNotification('failure', g.description);
             }
 
@@ -286,6 +330,7 @@ class GoalsManager {
                 completed: g.completed,
                 current_streak: g.current_streak,
                 tier: g.tier,
+                pending_claim: g.pending_claim,
             };
         });
     }
@@ -301,10 +346,11 @@ class GoalsManager {
         const notif = document.createElement('div');
         notif.className = `goal-notification goal-notification-${type}`;
 
-        const icons = { success: '&#127881;', tier: '&#127942;', failure: '&#9888;' };
+        const icons = { success: '&#127881;', tier: '&#127942;', claim: '&#127873;', failure: '&#9888;' };
         const titles = {
             success: 'Congratulations! Goal completed!',
             tier: 'Goal tier advanced! Keep going!',
+            claim: 'Goal reached! Claim your reward!',
             failure: 'Goal was not met and has been reset. Try again!',
         };
         const icon = icons[type] || icons.failure;

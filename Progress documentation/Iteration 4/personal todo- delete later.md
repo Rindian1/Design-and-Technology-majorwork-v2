@@ -10,3 +10,9 @@ Appliance page
 
 General insights page
     1) General insights graphs y axis currently scales, which is fine, but it should not scale so that the maximum value is below $10. Also add a horizontal line on the weekly spendings graph which shows the daily budget .*quick fix*
+
+Raspberry pi compatiability: 
+    1) Debug and find out why the plugs page does not work on the raspberry PI
+    2) Debug and figure out why the appliance specific reccomendations do not work on the raspberry PI 
+        - Best case scenario: Local LLM just needs setting up 
+        - Worst case scenario: Find and get an online API key

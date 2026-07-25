@@ -299,6 +299,10 @@ class EnergyDashboard {
           if (!this._dayFF.running) return;
           goalsManager._renderFF(data);
           goalsManager._checkNotifications(data.goals || []);
+          if (data.goals && data.goals.some(g => g.pending_claim)) {
+            this._stopDayFF(true);
+            return;
+          }
         } catch (e) {
           console.error('Day FF goals tick failed:', e);
         }

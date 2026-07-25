@@ -908,6 +908,7 @@ class GoalsEngine:
                     'target_value': g.target_value,
                     'current_streak': g.current_streak,
                     'completed': g.completed,
+                    'pending_claim': g.pending_claim,
                     'tier': current_tier,
                     'max_tiers': len(tiers),
                     'timeframe_label': cfg['timeframe_label'].format(
@@ -933,6 +934,9 @@ class GoalsEngine:
             self._compute_linear(goal, cfg, profile, today, session)
 
     def _compute_streak(self, goal, cfg, profile, today, session):
+        if goal.pending_claim:
+            return
+
         start = goal.timeframe_start or today
         check_from = goal.last_checked_date or start
         if check_from > today:
@@ -982,7 +986,7 @@ class GoalsEngine:
             current += timedelta(days=1)
 
         if int(goal.current_value) >= int(goal.target_value):
-            self._complete_goal(goal, cfg, session)
+            goal.pending_claim = True
 
     def _get_offpeak_ratio(self, records, profile):
         if not records:
@@ -998,6 +1002,9 @@ class GoalsEngine:
         return offpeak / total if total > 0 else 0
 
     def _compute_linear(self, goal, cfg, profile, today, session):
+        if goal.pending_claim:
+            return
+
         profile_dict = profile if isinstance(profile, dict) else {}
         budget_kwh = profile_dict.get('budget_kwh', 30)
         threshold_pct = cfg.get('default_threshold_pct', 10)
@@ -1045,11 +1052,11 @@ class GoalsEngine:
 
             days_elapsed = (today - start).days + 1
             if days_elapsed >= 7 and not exceeded:
-                self._complete_goal(goal, cfg, session)
+                goal.pending_claim = True
             return
 
         if goal.current_value >= goal.target_value:
-            self._complete_goal(goal, cfg, session)
+            goal.pending_claim = True
 
     def _award_points(self, user_id, points, session):
         profile = session.query(UserProfile).filter(
@@ -1117,6 +1124,7 @@ class GoalsEngine:
                 goal.current_value = 0
                 goal.current_streak = 0
                 goal.completed = False
+                goal.pending_claim = False
                 goal.tier = 0
                 goal.timeframe_start = parsed_date
                 goal.last_checked_date = None
@@ -1126,6 +1134,37 @@ class GoalsEngine:
 
             session.commit()
             return {'status': 'ok', 'goal_id': goal_id, 'new_status': goal.status}
+        finally:
+            session.close()
+
+    def claim_goal(self, goal_id: str, user_id: int):
+        session = self._get_session()
+        try:
+            goal = session.query(UserGoal).filter(
+                UserGoal.user_id == user_id,
+                UserGoal.goal_id == goal_id
+            ).first()
+            if not goal:
+                return {'error': 'Goal not found'}, 404
+            if not goal.pending_claim:
+                return {'error': 'Goal is not claimable'}, 400
+
+            cfg = next((c for c in self._load_config() if c.get('goal_id') == goal_id), None)
+            if not cfg:
+                return {'error': 'Goal config not found'}, 404
+
+            tiers = cfg.get('tiers', [])
+            current_tier = goal.tier or 0
+            if current_tier + 1 < len(tiers):
+                reward = tiers[current_tier + 1]['reward']
+            else:
+                reward = tiers[current_tier]['reward'] if current_tier < len(tiers) else cfg['completion_reward']
+
+            self._complete_goal(goal, cfg, session)
+            goal.pending_claim = False
+            session.commit()
+
+            return {'status': 'ok', 'tier': goal.tier, 'completed': goal.completed, 'reward': reward}
         finally:
             session.close()
 
@@ -1139,6 +1178,7 @@ class GoalsEngine:
                     g.current_value = 0
                     g.current_streak = 0
                     g.completed = False
+                    g.pending_claim = False
                     g.tier = 0
                     g.timeframe_start = parsed
                     g.last_checked_date = None
@@ -1162,6 +1202,7 @@ class GoalsEngine:
                 g.current_value = 0
                 g.current_streak = 0
                 g.completed = False
+                g.pending_claim = False
                 g.tier = 0
                 g.timeframe_start = None
                 g.last_checked_date = None

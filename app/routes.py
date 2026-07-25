@@ -170,6 +170,15 @@ def register_routes(app):
             return jsonify(result[0]), result[1]
         return jsonify(result)
 
+    @app.route('/api/goals/<goal_id>/claim', methods=['POST'])
+    @login_required
+    def claim_goal(goal_id):
+        user_id = get_user_id()
+        result = goals_engine.claim_goal(goal_id, user_id)
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+        return jsonify(result)
+
     @app.route('/api/goals/demo-init', methods=['POST'])
     @login_required
     def demo_init_goals():
