@@ -23,7 +23,7 @@ Appliance page
     2) Should be a question at the top of the appliance settings, saying, what if i cant afford this upgrade? with an info button next to it. Here the popup should say 'Managing finances can be diffficult but as shown in these reccomendations, these will create longterm savings in your energy usage. Additionally, by selling your current appliance on sites such as ebay, you can offset some of the cost of the new appliance.' *quick fix*
 
 Raspberry pi compatiability: 
-    1) Debug and find out why the plugs page does not work on the raspberry PI
+    1) Debug and find out why the plugs page does not work on the raspberry PI *done*
     2) Debug and figure out why the appliance specific reccomendations do not work on the raspberry PI 
         - Best case scenario: Local LLM just needs setting up 
         - Worst case scenario: Find and get an online API key

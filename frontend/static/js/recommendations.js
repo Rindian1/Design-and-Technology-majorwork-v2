@@ -62,6 +62,8 @@ class RecommendationsManager {
         const tips = data.behaviour_tips || [];
         const tipBanner = data.tip_banner || '';
         const rate = data.rate_per_kwh || 0.30;
+        const budgetKwh = data.budget_kwh || 16.7;
+        const dailyBudget = budgetKwh * rate;
 
         const dayLabels = ws.map(d => {
             const dt = new Date(d.date + 'T00:00:00');
@@ -186,11 +188,11 @@ class RecommendationsManager {
             </div>
         `;
 
-        this._initChart(dayLabels, costValues);
+        this._initChart(dayLabels, costValues, dailyBudget);
         this._initTrendChart();
     }
 
-    _initChart(labels, values) {
+    _initChart(labels, values, dailyBudget) {
         if (this._chartInstance) {
             this._chartInstance.destroy();
             this._chartInstance = null;
@@ -203,29 +205,62 @@ class RecommendationsManager {
 
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+        const budgetLine = dailyBudget != null ? new Array(labels.length).fill(dailyBudget) : null;
+
+        const budgetLabelPlugin = budgetLine ? {
+            id: 'budgetLabel',
+            afterDraw(chart) {
+                const yScale = chart.scales.y;
+                const xArea = chart.chartArea;
+                const yPos = yScale.getPixelForValue(dailyBudget);
+                const ctx = chart.ctx;
+                ctx.save();
+                ctx.font = '10px sans-serif';
+                ctx.fillStyle = '#448aff';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('Budget', xArea.left, yPos - 4);
+                ctx.restore();
+            },
+        } : null;
+
         this._chartInstance = new Chart(ctx, {
             type: 'bar',
+            plugins: budgetLabelPlugin ? [budgetLabelPlugin] : [],
             data: {
                 labels: labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: values.map(v => {
-                        const max = Math.max(...values, 1);
-                        const ratio = v / max;
-                        if (ratio > 0.7) return '#ff525288';
-                        if (ratio > 0.4) return '#ffab0088';
-                        return '#00e67688';
-                    }),
-                    borderColor: values.map(v => {
-                        const max = Math.max(...values, 1);
-                        const ratio = v / max;
-                        if (ratio > 0.7) return '#ff5252';
-                        if (ratio > 0.4) return '#ffab00';
-                        return '#00e676';
-                    }),
-                    borderWidth: 2,
-                    borderRadius: 4,
-                }]
+                datasets: [
+                    {
+                        data: values,
+                        backgroundColor: values.map(v => {
+                            const max = Math.max(...values, 1);
+                            const ratio = v / max;
+                            if (ratio > 0.7) return '#ff525288';
+                            if (ratio > 0.4) return '#ffab0088';
+                            return '#00e67688';
+                        }),
+                        borderColor: values.map(v => {
+                            const max = Math.max(...values, 1);
+                            const ratio = v / max;
+                            if (ratio > 0.7) return '#ff5252';
+                            if (ratio > 0.4) return '#ffab00';
+                            return '#00e676';
+                        }),
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        order: 2,
+                    },
+                    ...(budgetLine ? [{
+                        type: 'line',
+                        data: budgetLine,
+                        borderColor: '#448aff',
+                        borderWidth: 2,
+                        borderDash: [6, 4],
+                        pointRadius: 0,
+                        fill: false,
+                        order: 1,
+                    }] : []),
+                ]
             },
             options: {
                 responsive: true,
@@ -235,13 +270,17 @@ class RecommendationsManager {
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: (ctx) => `$${ctx.raw}`,
+                            label: (ctx) => {
+                                if (ctx.datasetIndex === 1) return `Budget: $${ctx.raw.toFixed(2)}`;
+                                return `Daily: $${ctx.raw}`;
+                            },
                         },
                     },
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
+                        suggestedMax: 10,
                         grid: { color: 'rgba(255,255,255,0.04)' },
                         ticks: {
                             color: '#888',

@@ -57,6 +57,7 @@ def list_plugs():
             creds = sess.query(TapoCredentials).filter(TapoCredentials.user_id == user_id).first()
             if creds:
                 tapo_email = creds.email
+                tapo_password = creds.password
 
         profile = sess.query(UserProfile).filter(UserProfile.user_id == user_id).first()
         rate_per_kwh = 0.30
@@ -87,15 +88,15 @@ def list_plugs():
                         power_info = await_async(device.get_current_power())
                         current_power_mw = power_info.current_power
                         cost_per_hour = round((current_power_mw / 1000) * rate_per_kwh, 4)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"Plug power read error for '{plug.name}': {e}")
                     try:
                         energy = await_async(device.get_energy_usage())
                         today_energy_kwh = round(energy.today_energy, 3)
-                    except Exception:
-                        pass
-                except Exception:
-                    pass
+                    except Exception as e:
+                        print(f"Plug energy read error for '{plug.name}': {e}")
+                except Exception as e:
+                    print(f"Plug connection error for '{plug.name}': {e}")
 
             d = plug.to_dict()
             d['status'] = status
