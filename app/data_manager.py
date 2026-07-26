@@ -194,6 +194,25 @@ class EnergyDataManager:
         finally:
             session.close()
 
+    def update_appliance(self, user_id: int, appliance_model: str = None, power_rating: str = None, appliance_type: str = None):
+        session = self.db.get_session()
+        try:
+            profile = session.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+            if not profile:
+                return False
+            data = json.loads(profile.survey_data) if profile.survey_data else {}
+            if appliance_model is not None:
+                data['appliance_model'] = appliance_model
+            if power_rating is not None:
+                data['power_rating'] = power_rating
+            if appliance_type is not None:
+                data['appliance_type'] = appliance_type
+            profile.survey_data = json.dumps(data)
+            session.commit()
+            return True
+        finally:
+            session.close()
+
 
 class GraphDataProcessor:
     @staticmethod

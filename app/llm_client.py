@@ -1,20 +1,10 @@
 import json
 from openai import OpenAI
 
-from config import DEEPSEEK_API_KEY
+from config import OPENAI_API_KEY
 
-OLLAMA_BASE = "http://localhost:11434/v1"
-OLLAMA_MODEL = "llama3.2:1b"
-
-_deepseek_client = OpenAI(
-    api_key=DEEPSEEK_API_KEY,
-    base_url="https://api.deepseek.com",
-) if DEEPSEEK_API_KEY else None
-
-_ollama_client = OpenAI(
-    api_key="ollama",
-    base_url=OLLAMA_BASE,
-)
+_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+OPENAI_MODEL = "gpt-4o-mini"
 
 
 def _build_prompt(profile, usage, date_str):
@@ -47,14 +37,20 @@ USER PROFILE:{details}
 
 TASK:
 Recommend up to 3 specific, real, currently-available replacement appliances that are more energy efficient. Only recommend if the user has provided enough details (appliance type and model/power rating). If insufficient info is given, respond with no_recommendation: true.
+IMPORTANT: Do NOT recommend the same appliance model the user already owns. Recommend different, more efficient alternatives only.
 
 Consider the user is in Australia. Use AUD for prices. Sort from most savings to least savings.
 
-IMPORTANT: Only output raw numbers, never formulas or calculations.
+CRITICAL RULES:
+- Each recommendation MUST have a DIFFERENT estimated_annual_kwh and estimated_retail_price_aud. Do not repeat the same values.
+- estimated_annual_kwh must reflect the ACTUAL efficiency of each specific model. A more efficient model uses less kWh.
+- Do NOT recommend the same appliance model the user already owns.
+- Only output raw numbers, never formulas or calculations.
 
 RESPONSE FORMAT (pure JSON, no markdown, no code fences):
 {{
   "no_recommendation": false,
+  "current_appliance_retail_price_aud": number,
   "recommendations": [
     {{
       "recommended_model": "Full model name",
@@ -86,28 +82,64 @@ def _call_llm(client, model, prompt):
             {"role": "system", "content": "You are an energy efficiency expert. Always respond with valid JSON only, no markdown formatting."},
             {"role": "user", "content": prompt},
         ],
-        temperature=0.3,
+        temperature=0.5,
         max_tokens=2000,
     )
 
 
-def _enrich_rec(rec, rate, current_annual_cost):
+def _enrich_rec(rec, rate, current_annual_cost, current_appliance_retail=0):
     annual_kwh = rec.get('estimated_annual_kwh', 0)
     annual_cost = round(annual_kwh * rate, 2)
     savings = round(current_annual_cost - annual_cost, 2)
     savings_pct = round((savings / current_annual_cost) * 100, 1) if current_annual_cost > 0 else 0
     payback = round(rec.get('estimated_retail_price_aud', 0) / savings, 1) if savings > 0 else None
 
+    new_retail = rec.get('estimated_retail_price_aud', 0) or 0
+    resale_value = (current_appliance_retail or 0) * 0.7
+    offset_price = round(new_retail - resale_value, 2)
+    if offset_price < 0:
+        payback_with_offset = 0
+    elif savings > 0:
+        payback_with_offset = round(offset_price / savings, 1)
+    else:
+        payback_with_offset = 0
+
     rec['current_annual_cost_dollars'] = round(current_annual_cost, 2)
     rec['estimated_annual_cost_dollars'] = annual_cost
     rec['estimated_annual_savings_dollars'] = savings
     rec['savings_percentage'] = savings_pct
     rec['payback_period_years'] = payback
+    rec['offset_price'] = offset_price
+    rec['payback_with_offset'] = payback_with_offset
     return rec
 
 
 def _sort_recs(recs):
     return sorted(recs, key=lambda r: r.get('estimated_annual_savings_dollars', 0), reverse=True)
+
+
+def _filter_by_efficiency(recs, current_annual_kwh, current_power_watts):
+    filtered = []
+    for r in recs:
+        rec_kwh = r.get('estimated_annual_kwh')
+        rec_power = r.get('power_rating_watts')
+        more_efficient = False
+        if current_annual_kwh and rec_kwh:
+            more_efficient = rec_kwh < current_annual_kwh
+        elif current_power_watts and rec_power:
+            more_efficient = float(rec_power) < float(current_power_watts)
+        else:
+            more_efficient = True
+        if more_efficient:
+            filtered.append(r)
+    return filtered
+
+
+def _filter_same_model(recs, current_model):
+    if not current_model:
+        return recs
+    current_lower = current_model.lower().strip()
+    return [r for r in recs if current_lower not in (r.get('recommended_model') or '').lower()]
 
 
 def get_appliance_recommendation(profile, usage, date_str):
@@ -116,6 +148,13 @@ def get_appliance_recommendation(profile, usage, date_str):
             'date': date_str,
             'recommendations': None,
             'error': 'No appliance details provided. Fill in your appliance model in the survey to get recommendations.',
+        }
+
+    if not _client:
+        return {
+            'date': date_str,
+            'recommendations': None,
+            'error': 'No LLM API key configured.',
         }
 
     rate = profile.get('rate_per_kwh', 0.30)
@@ -127,34 +166,25 @@ def get_appliance_recommendation(profile, usage, date_str):
 
     prompt = _build_prompt(profile, usage, date_str)
 
-    # Try DeepSeek first, fall back to Ollama
-    last_error = None
-    if _deepseek_client:
-        try:
-            response = _call_llm(_deepseek_client, "deepseek-chat", prompt)
-            data = _parse_response(response.choices[0].message.content)
-            if data.get('no_recommendation'):
-                return {'date': date_str, 'recommendations': None}
-            recs = [_enrich_rec(r, rate, current_annual_cost) for r in data.get('recommendations', [])]
-            recs = _sort_recs(recs)
-            return {'date': date_str, 'recommendations': recs if recs else None}
-        except Exception as e:
-            last_error = e
-
     try:
-        response = _call_llm(_ollama_client, OLLAMA_MODEL, prompt)
+        response = _call_llm(_client, OPENAI_MODEL, prompt)
         data = _parse_response(response.choices[0].message.content)
         if data.get('no_recommendation'):
             return {'date': date_str, 'recommendations': None}
-        recs = [_enrich_rec(r, rate, current_annual_cost) for r in data.get('recommendations', [])]
+        current_retail = data.get('current_appliance_retail_price_aud', 0)
+        recs = [_enrich_rec(r, rate, current_annual_cost, current_retail) for r in data.get('recommendations', [])]
+        recs = _filter_by_efficiency(recs, total_kwh * 365, profile.get('power_rating'))
+        recs = _filter_same_model(recs, profile.get('appliance_model'))
         recs = _sort_recs(recs)
-        return {'date': date_str, 'recommendations': recs if recs else None}
+        return {
+            'date': date_str,
+            'current_appliance_model': profile.get('appliance_model', 'Unknown'),
+            'current_appliance_retail_price_aud': current_retail,
+            'recommendations': recs if recs else None,
+        }
     except Exception as e:
-        error_msg = f'Failed to get recommendation: {str(e)}'
-        if last_error:
-            error_msg += f' (DeepSeek: {last_error})'
         return {
             'date': date_str,
             'recommendations': None,
-            'error': error_msg,
+            'error': f'Failed to get recommendation: {str(e)}',
         }

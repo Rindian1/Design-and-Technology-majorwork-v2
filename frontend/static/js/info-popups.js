@@ -12,7 +12,8 @@
     'feat_gauge', 'feat_hourly_chart', 'feat_mini_stats',
     'feat_weekly_spending', 'feat_comparison', 'feat_savings',
     'feat_trend', 'feat_behavioural', 'feat_appliance',
-    'feat_goals', 'feat_plugs'
+    'feat_goals', 'feat_plugs', 'cant_afford',
+    'offset_price', 'payback_offset', 'offset_profit'
   ]);
 
   const INFO_DEFS = {
@@ -51,6 +52,10 @@
     feat_appliance: {
       term: 'Appliance Recommendations',
       definition: 'Suggests energy-efficient appliance upgrades based on your usage data, with estimated costs, annual savings, and payback periods.'
+    },
+    cant_afford: {
+      term: "What if I can't afford this upgrade?",
+      definition: 'Managing finances can be difficult but as shown in these recommendations, these will create long-term savings in your energy usage. Additionally, by selling your current appliance on sites such as eBay, you can offset some of the cost of the new appliance.'
     },
     feat_goals: {
       term: 'Energy Goals',
@@ -147,6 +152,18 @@
     plug_toggle: {
       term: 'Plug Toggle',
       definition: 'Turn your smart plug on or off remotely. The plug communicates with your device through your home Wi-Fi network.'
+    },
+    offset_price: {
+      term: 'Offset Price',
+      definition: 'The effective cost of the new appliance after accounting for the resale value of your current appliance. If you sell your current appliance on platforms like eBay, you can typically recover at least 70% of its retail price. This amount is subtracted from the new appliance\'s price.'
+    },
+    payback_offset: {
+      term: 'Payback with Offset',
+      definition: 'The payback period accounting for the resale value of your current appliance. Shows how quickly the annual electricity savings cover the net cost of the new appliance after selling your old one.'
+    },
+    offset_profit: {
+      term: 'Profit from Switch',
+      definition: 'The value shown in green means your current appliance\'s resale value exceeds the new appliance\'s price. You would effectively make money from the switch while also saving on energy costs.'
     }
   };
 

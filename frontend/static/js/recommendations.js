@@ -5,6 +5,15 @@ class RecommendationsManager {
         this._chartInstance = null;
         this._trendChartInstance = null;
         this._ff = { running: false, timer: null, date: null };
+        this._setupDelegation();
+    }
+
+    _setupDelegation() {
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.appliance-switch-btn');
+            if (!btn) return;
+            this._switchAppliance(btn);
+        });
     }
 
     async loadGeneralInsights(date) {
@@ -27,8 +36,15 @@ class RecommendationsManager {
         }
     }
 
-    _applianceHeading() {
-        return '<h1 class="gi-title"><span class="info-heading">Appliance Specific Recommendations' + INFO.icon('feat_appliance') + '</span></h1>';
+    _applianceHeading(currentAppliance) {
+        const applianceLabel = currentAppliance
+            ? '<span class="current-appliance-label">Current appliance: ' + this._escapeHtml(currentAppliance) + '</span>'
+            : '';
+        return '<div class="appliance-heading-row">' +
+            '<h1 class="gi-title"><span class="info-heading">Appliance Specific Recommendations' + INFO.icon('feat_appliance') + '</span></h1>' +
+            applianceLabel +
+            '</div>' +
+            '<div class="appliance-afford-question">What if I can\'t afford this upgrade? ' + INFO.icon('cant_afford') + '</div>';
     }
 
     async loadApplianceRecs(date) {
@@ -38,7 +54,7 @@ class RecommendationsManager {
         try {
             const data = await energyAPI.getApplianceRecs(date);
             if (data && data.recommendations && data.recommendations.length > 0) {
-                this._renderApplianceRecs(data.recommendations);
+                this._renderApplianceRecs(data);
                 return;
             }
             if (data && data.error) {
@@ -380,16 +396,18 @@ class RecommendationsManager {
         }
     }
 
-    _renderApplianceRecs(recs) {
+    _renderApplianceRecs(data) {
+        const recs = data.recommendations;
         if (!recs || recs.length === 0) {
             this._showEmpty(this._applianceContainer, 'No appliance recommendations available.');
             return;
         }
 
+        const currentAppliance = data.current_appliance_model || null;
         const sorted = [...recs].sort((a, b) => (b.estimated_annual_savings_dollars || 0) - (a.estimated_annual_savings_dollars || 0));
         const cards = sorted.map(r => this._createApplianceCard(r)).join('');
 
-        this._applianceContainer.innerHTML = this._applianceHeading() + `<div class="recs-appliance-list">${cards}</div>`;
+        this._applianceContainer.innerHTML = this._applianceHeading(currentAppliance) + `<div class="recs-appliance-list">${cards}</div>`;
     }
 
     _createApplianceCard(rec) {
@@ -435,7 +453,21 @@ class RecommendationsManager {
                         <span class="spec-label">Payback period${INFO.icon('payback_period')}</span>
                         <span class="spec-value">${rec.payback_period_years || '\u2014'} years</span>
                     </div>
+                    <div class="spec-item${rec.offset_price < 0 ? ' highlight-green' : ''}">
+                        <span class="spec-label">Offset price${INFO.icon(rec.offset_price < 0 ? 'offset_profit' : 'offset_price')}</span>
+                        <span class="spec-value">$${Math.abs(rec.offset_price || 0)}${rec.offset_price < 0 ? ' profit' : ''}</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Payback with offset${INFO.icon('payback_offset')}</span>
+                        <span class="spec-value">${rec.payback_with_offset || 0} years</span>
+                    </div>
                 </div>
+                <button class="appliance-switch-btn"
+                        data-model="${this._escapeHtml(rec.recommended_model || '')}"
+                        data-power="${rec.power_rating_watts || ''}"
+                        data-type="">
+                    I have switched my appliance to this
+                </button>
             </div>
         `;
     }
@@ -444,6 +476,28 @@ class RecommendationsManager {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    async _switchAppliance(btn) {
+        const model = btn.dataset.model;
+        const power = btn.dataset.power;
+        if (!model) return;
+        btn.disabled = true;
+        btn.textContent = 'Updating...';
+        try {
+            await energyAPI.request('/api/appliance-switch', {
+                method: 'POST',
+                body: JSON.stringify({ appliance_model: model, power_rating: power }),
+            });
+            energyAPI.clearCache();
+            if (typeof navigation !== 'undefined') {
+                await this.loadApplianceRecs(navigation.getCurrentDate());
+            }
+        } catch (err) {
+            console.error('Failed to switch appliance:', err);
+            btn.disabled = false;
+            btn.textContent = 'I have switched my appliance to this';
+        }
     }
 
     async _startFF() {

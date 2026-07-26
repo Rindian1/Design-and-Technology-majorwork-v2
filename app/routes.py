@@ -137,6 +137,21 @@ def register_routes(app):
         result = get_appliance_recommendation(profile, usage, date)
         return jsonify(result)
 
+    @app.route('/api/appliance-switch', methods=['POST'])
+    @login_required
+    def appliance_switch():
+        user_id = get_user_id()
+        data = request.get_json(silent=True) or {}
+        ok = data_manager.update_appliance(
+            user_id,
+            appliance_model=data.get('appliance_model'),
+            power_rating=data.get('power_rating'),
+            appliance_type=data.get('appliance_type'),
+        )
+        if not ok:
+            return jsonify({'error': 'Failed to update'}), 500
+        return jsonify({'status': 'ok'})
+
     @app.route('/api/recommendations/<date>')
     @login_required
     def get_recommendations(date):
