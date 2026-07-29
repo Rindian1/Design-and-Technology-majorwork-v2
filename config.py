@@ -25,6 +25,10 @@ PLUGS_CONFIG = {
     "living_room_plug": "192.168.0.181",
 }
 
+PLUG_DEMO_USER_ID = 2
+PLUG_DEMO_EMAIL = 'plugdemo@example.com'
+PLUG_POLL_INTERVAL = 300
+
 TAPO_USERNAME = os.getenv("TAPO_USERNAME")
 TAPO_PASSWORD = os.getenv("TAPO_PASSWORD")
 

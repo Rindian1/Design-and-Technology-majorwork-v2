@@ -4,7 +4,7 @@ from functools import wraps
 from flask import Blueprint, render_template, jsonify, session, request
 from tapo import ApiClient
 
-from app.models import DatabaseSession, UserPlug, TapoCredentials, UserProfile
+from app.models import DatabaseSession, UserPlug, TapoCredentials, UserProfile, Reading, DailyTotal
 from config import HEATING_DB_PATH
 
 plug_bp = Blueprint('plugs', __name__)
@@ -365,3 +365,44 @@ def await_async(coro):
         return loop.run_until_complete(coro)
     finally:
         loop.close()
+
+
+@plug_bp.route('/api/plugs/readings/<date>', methods=['GET'])
+@login_required
+def get_readings(date):
+    user_id = get_user_id()
+    db, sess = get_db()
+    try:
+        plugs = sess.query(UserPlug).filter(UserPlug.user_id == user_id).all()
+        plug_names = [p.name for p in plugs]
+
+        readings = sess.query(Reading).filter(
+            Reading.date == date,
+            Reading.plug_name.in_(plug_names),
+        ).all()
+
+        hourly = {}
+        for r in readings:
+            hour = r.timestamp.hour
+            if hour not in hourly:
+                hourly[hour] = {'watts': 0, 'cost': 0, 'count': 0}
+            hourly[hour]['watts'] += r.watts
+            hourly[hour]['cost'] += r.cost_increment
+            hourly[hour]['count'] += 1
+
+        result = []
+        for h in range(24):
+            if h in hourly:
+                avg_watts = round(hourly[h]['watts'] / hourly[h]['count'], 2)
+                result.append({
+                    'hour': h,
+                    'avg_watts': avg_watts,
+                    'total_cost': round(hourly[h]['cost'], 6),
+                    'readings_count': hourly[h]['count'],
+                })
+            else:
+                result.append({'hour': h, 'avg_watts': 0, 'total_cost': 0, 'readings_count': 0})
+
+        return jsonify({'date': date, 'hourly': result})
+    finally:
+        close_db(db, sess)

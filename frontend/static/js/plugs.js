@@ -611,4 +611,80 @@
     div.textContent = str;
     return div.innerHTML;
   }
+
+  let plugChart = null;
+  let plugChartInterval = null;
+
+  function initPlugChart() {
+    const canvas = document.getElementById('plug-chart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    plugChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`),
+        datasets: [{
+          label: 'Avg Watts',
+          data: new Array(24).fill(0),
+          backgroundColor: 'rgba(0, 230, 118, 0.5)',
+          borderColor: 'rgba(0, 230, 118, 1)',
+          borderWidth: 1,
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.parsed.y.toFixed(1)} W`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Watts', color: '#888', font: { size: 11 } },
+            ticks: { color: '#888', font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.06)' },
+          },
+          x: {
+            ticks: { color: '#888', font: { size: 10 }, maxRotation: 45 },
+            grid: { display: false },
+          },
+        },
+      },
+    });
+  }
+
+  async function loadPlugReadings() {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await fetch(`/api/plugs/readings/${today}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!plugChart) initPlugChart();
+      if (plugChart && data.hourly) {
+        plugChart.data.datasets[0].data = data.hourly.map(h => h.avg_watts);
+        plugChart.update();
+      }
+    } catch (err) {
+      console.error('Error loading plug readings:', err);
+    }
+  }
+
+  window.addEventListener('tabChanged', (e) => {
+    if (e.detail.tab === 'plugs') {
+      loadPlugReadings();
+      if (plugChartInterval) clearInterval(plugChartInterval);
+      plugChartInterval = setInterval(loadPlugReadings, 300000);
+    } else {
+      if (plugChartInterval) {
+        clearInterval(plugChartInterval);
+        plugChartInterval = null;
+      }
+    }
+  });
 })();

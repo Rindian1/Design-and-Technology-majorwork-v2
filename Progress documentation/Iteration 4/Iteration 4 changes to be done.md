@@ -2,7 +2,7 @@ Overall changes
     1) Multiple plugs need to be added in the graphs and the features *HIGH IMPORTANCE*
     2) Implement data polling, whether fabricated or not, it should seem as though the product is getting live data. *HIGH IMPORTANCE*    
 
-    4) Reorgnaise the heading bar, so that it goes 'Home' in the center, to the left of this it should be 'goals' and 'plugs', and to the right should be 'general insights and appliance specific' *quick fix*
+    4) Reorgnaise the heading bar, so that it goes 'Home' in the center, to the left of this it should be 'goals' and 'plugs', and to the right should be 'general insights and appliance specific' *quick fix* DONE
 
 Info popups DONE
     1) info popups still dont work, when the user scrolls down and clicks a popup, they are not anchored properly, causing for the popup to be less readable. *quick fix* *DONE*
@@ -24,7 +24,7 @@ Appliance page DONE
 
 Raspberry pi compatiability: 
     1) Debug and find out why the plugs page does not work on the raspberry PI *done*
-    2) Buy and implement an online api for appliance reccomendations
+    2) Buy and implement an online api for appliance reccomendations DONE
 
 
 

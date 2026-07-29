@@ -80,6 +80,10 @@ class EnergyAPI {
         return this.request(`/api/recommendations/appliance/${date}`);
     }
 
+    async getPlugReadings(date) {
+        return this.request(`/api/plugs/readings/${date}`);
+    }
+
     async getProfile() {
         return this.request('/api/profile');
     }
@@ -113,6 +117,10 @@ class EnergyAPI {
 
     async demoLogin() {
         return this.request('/api/auth/demo', { method: 'POST' });
+    }
+
+    async plugDemoLogin() {
+        return this.request('/api/auth/plug-demo', { method: 'POST' });
     }
 
     async logout() {

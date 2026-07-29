@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Energy Monitoring Dashboard">
   <title>{% block title %}Energy Monitor{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=23">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=25">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -20,7 +20,7 @@
       <div class="header-spacer"></div>
       <span class="info-trigger" data-info-key="points" tabindex="0" role="button" aria-label="More info about points">ℹ</span>
       <button class="points-badge" id="points-badge" data-tab="goals" title="View Goals">
-        <span class="points-badge-icon">🏆</span>
+        <span class="points-badge-icon"><img src="/static/images/Medal.svg" alt="Medal" class="points-badge-img"></span>
         <span class="points-badge-value" id="points-badge-value">0</span>
       </button>
       <div class="user-menu" id="user-menu">
@@ -62,13 +62,13 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/info-popups.js') }}?v=6"></script>
-  <script src="{{ url_for('static', filename='js/api.js') }}?v=4"></script>
+  <script src="{{ url_for('static', filename='js/api.js') }}?v=5"></script>
   <script src="{{ url_for('static', filename='js/navigation.js') }}?v=5"></script>
   <script src="{{ url_for('static', filename='js/gauge.js') }}?v=5"></script>
   <script src="{{ url_for('static', filename='js/recommendations.js') }}?v=12"></script>
   <script src="{{ url_for('static', filename='js/goals.js') }}?v=17"></script>
-  <script src="{{ url_for('static', filename='js/auth.js') }}?v=4"></script>
+  <script src="{{ url_for('static', filename='js/auth.js') }}?v=5"></script>
   <script src="{{ url_for('static', filename='js/main.js') }}?v=19"></script>
-  <script src="{{ url_for('static', filename='js/plugs.js') }}?v=2"></script>
+  <script src="{{ url_for('static', filename='js/plugs.js') }}?v=3"></script>
 </body>
 </html>

@@ -978,6 +978,16 @@ body {
 .points-badge-icon {
   font-size: 14px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.points-badge-img {
+  width: 18px;
+  height: 18px;
+}
+.ff-icon {
+  width: 18px;
+  height: 18px;
 }
 .points-badge-value {
   font-variant-numeric: tabular-nums;
@@ -1109,6 +1119,12 @@ body {
 .goals-header-icon {
   font-size: 28px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.goals-header-img {
+  width: 48px;
+  height: 48px;
 }
 .goals-header-label {
   font-size: 11px;
@@ -1646,6 +1662,16 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   padding-bottom: 16px;
+}
+.plug-readings-chart {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+}
+.plug-readings-chart .chart-wrap {
+  height: 200px;
 }
 .plug-empty {
   grid-column: 1 / -1;

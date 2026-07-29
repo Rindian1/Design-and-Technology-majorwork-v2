@@ -24,6 +24,8 @@
 
     <button class="btn btn-secondary btn-full" id="demo-btn">View Demo Dashboard</button>
 
+    <button class="btn btn-secondary btn-full" id="plug-demo-btn">View Plug Demo Dashboard</button>
+
     <p class="auth-footer">
       Don't have an account? <a href="/register">Create one</a>
     </p>
@@ -58,6 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('demo-btn').addEventListener('click', async () => {
     try {
       await authManager.demoLogin();
+      window.location.href = '/';
+    } catch (err) {
+      errorEl.textContent = err.message;
+    }
+  });
+
+  document.getElementById('plug-demo-btn').addEventListener('click', async () => {
+    try {
+      await authManager.plugDemoLogin();
       window.location.href = '/';
     } catch (err) {
       errorEl.textContent = err.message;

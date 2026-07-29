@@ -23,6 +23,10 @@ class AuthManager {
         return energyAPI.demoLogin();
     }
 
+    async plugDemoLogin() {
+        return energyAPI.plugDemoLogin();
+    }
+
     async logout() {
         return energyAPI.logout();
     }

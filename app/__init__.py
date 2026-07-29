@@ -38,4 +38,7 @@ def create_app():
     from app.plug_scheduler import start_scheduler
     start_scheduler()
 
+    from app.plug_data_poller import start_poller
+    start_poller()
+
     return app
