@@ -7,12 +7,11 @@
     "default_threshold_pct": 0,
     "timeframe_label": "{current}/{target} days",
     "completion_reward": 200,
-    "tiers": [
+    "intensities": [
       { "target": 5, "threshold_pct": 0, "reward": 200, "description_template": "Get a {target} day streak of staying below your budget" },
       { "target": 7, "threshold_pct": 0, "reward": 250, "description_template": "Get a {target} day streak of staying below your budget" },
       { "target": 10, "threshold_pct": 0, "reward": 350, "description_template": "Get a {target} day streak of staying below your budget" },
-      { "target": 10, "threshold_pct": 5, "reward": 400, "description_template": "Stay {threshold_pct}% under budget for {target} days" },
-      { "target": 14, "threshold_pct": 5, "reward": 500, "description_template": "Stay {threshold_pct}% under budget for {target} days" }
+      { "target": 10, "threshold_pct": 5, "reward": 400, "description_template": "Stay {threshold_pct}% under budget for {target} days" }
     ]
   },
   {
@@ -23,7 +22,7 @@
     "default_threshold_pct": 0,
     "timeframe_label": "${current:.0f} / ${target:.0f}",
     "completion_reward": 300,
-    "tiers": [
+    "intensities": [
       { "target": 7, "budget_scale": 1.0, "threshold_pct": 0, "reward": 300, "description_template": "Stay below your weekly budget this week" },
       { "target": 7, "budget_scale": 0.85, "threshold_pct": 0, "reward": 350, "description_template": "Stay below 85% of your weekly budget this week" },
       { "target": 7, "budget_scale": 0.70, "threshold_pct": 0, "reward": 400, "description_template": "Stay below 70% of your weekly budget this week" },
@@ -38,7 +37,7 @@
     "default_threshold_pct": 70,
     "timeframe_label": "{current}/{target} days",
     "completion_reward": 250,
-    "tiers": [
+    "intensities": [
       { "target": 5, "threshold_pct": 70, "reward": 250, "description_template": "Have {threshold_pct}% of energy usage outside peak hours for {target} days" },
       { "target": 7, "threshold_pct": 75, "reward": 300, "description_template": "Have {threshold_pct}% of energy usage outside peak hours for {target} days" },
       { "target": 7, "threshold_pct": 80, "reward": 400, "description_template": "Have {threshold_pct}% of energy usage outside peak hours for {target} days" },

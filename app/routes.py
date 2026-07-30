@@ -179,8 +179,20 @@ def register_routes(app):
     @login_required
     def toggle_goal(goal_id):
         user_id = get_user_id()
+        result = goals_engine.toggle_goal(goal_id, user_id)
+        if isinstance(result, tuple):
+            return jsonify(result[0]), result[1]
+        return jsonify(result)
+
+    @app.route('/api/goals/<goal_id>/activate', methods=['POST'])
+    @login_required
+    def activate_goal(goal_id):
+        user_id = get_user_id()
         data = request.get_json(silent=True) or {}
-        result = goals_engine.toggle_goal(goal_id, user_id, target_date=data.get('date'))
+        intensity = data.get('intensity')
+        if intensity is None:
+            return jsonify({'error': 'intensity required'}), 400
+        result = goals_engine.activate_goal(goal_id, user_id, int(intensity), target_date=data.get('date'))
         if isinstance(result, tuple):
             return jsonify(result[0]), result[1]
         return jsonify(result)

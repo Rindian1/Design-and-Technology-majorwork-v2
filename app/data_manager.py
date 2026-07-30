@@ -912,10 +912,10 @@ class GoalsEngine:
                     self._compute_progress(g, cfg, profile, parsed_date, session)
                     session.commit()
 
-                tiers = cfg.get('tiers', [])
-                current_tier = g.tier or 0
-                tier_cfg = tiers[current_tier] if current_tier < len(tiers) else {}
-                effective_reward = tier_cfg.get('reward', cfg['completion_reward'])
+                intensities = cfg.get('intensities', [])
+                current_intensity = g.tier or 0
+                intensity_cfg = intensities[current_intensity] if current_intensity < len(intensities) else {}
+                effective_reward = intensity_cfg.get('reward', cfg['completion_reward'])
 
                 desc = self._render_description(cfg, g, profile)
                 result.append({
@@ -928,8 +928,13 @@ class GoalsEngine:
                     'current_streak': g.current_streak,
                     'completed': g.completed,
                     'pending_claim': g.pending_claim,
-                    'tier': current_tier,
-                    'max_tiers': len(tiers),
+                    'intensity': current_intensity,
+                    'max_intensities': len(intensities),
+                    'intensity_config': [
+                        {'target': i.get('target'), 'threshold_pct': i.get('threshold_pct', 0),
+                         'budget_scale': i.get('budget_scale'), 'reward': i.get('reward', cfg['completion_reward'])}
+                        for i in intensities
+                    ],
                     'timeframe_label': cfg['timeframe_label'].format(
                         current=g.current_value,
                         target=g.target_value,
@@ -964,10 +969,10 @@ class GoalsEngine:
         profile_dict = profile if isinstance(profile, dict) else {}
         budget_kwh = profile_dict.get('budget_kwh', 30)
 
-        tiers = cfg.get('tiers', [])
-        current_tier = goal.tier or 0
-        if current_tier < len(tiers):
-            threshold_pct = tiers[current_tier].get('threshold_pct') or cfg.get('default_threshold_pct', 10)
+        intensities = cfg.get('intensities', [])
+        current_intensity = goal.tier or 0
+        if current_intensity < len(intensities):
+            threshold_pct = intensities[current_intensity].get('threshold_pct') or cfg.get('default_threshold_pct', 10)
         else:
             threshold_pct = cfg.get('default_threshold_pct', 10)
 
@@ -1044,11 +1049,11 @@ class GoalsEngine:
             monthly_dollar_budget = budget_kwh * rate_per_kwh * 30
             base_weekly = monthly_dollar_budget / 4.2
 
-            tiers = cfg.get('tiers', [])
-            current_tier = goal.tier or 0
+            intensities = cfg.get('intensities', [])
+            current_intensity = goal.tier or 0
             budget_scale = 1.0
-            if current_tier < len(tiers):
-                budget_scale = tiers[current_tier].get('budget_scale', 1.0)
+            if current_intensity < len(intensities):
+                budget_scale = intensities[current_intensity].get('budget_scale', 1.0)
             weekly_dollar_budget = base_weekly * budget_scale
 
             week_records = session.query(HeatingUsage).filter(
@@ -1087,36 +1092,30 @@ class GoalsEngine:
         profile.points_total = (profile.points_total or 0) + points
 
     def _complete_goal(self, goal, cfg, session):
-        tiers = cfg.get('tiers', [])
-        current_tier = goal.tier or 0
+        intensities = cfg.get('intensities', [])
+        current_intensity = goal.tier or 0
+        reward = intensities[current_intensity]['reward'] if current_intensity < len(intensities) else cfg['completion_reward']
 
-        if current_tier + 1 < len(tiers):
-            next_tier = tiers[current_tier + 1]
-            self._award_points(goal.user_id, next_tier['reward'], session)
-            goal.tier = current_tier + 1
-            goal.target_value = float(next_tier['target'])
-            goal.current_value = 0
-            goal.current_streak = 0
-            goal.completed = False
-            goal.timeframe_start = None
-            goal.last_checked_date = None
-            goal.streak_start_date = None
-        else:
-            final_reward = tiers[current_tier]['reward'] if current_tier < len(tiers) else cfg['completion_reward']
-            self._award_points(goal.user_id, final_reward, session)
-            goal.completed = True
+        self._award_points(goal.user_id, reward, session)
+        goal.current_value = 0
+        goal.current_streak = 0
+        goal.completed = False
+        goal.pending_claim = False
+        goal.timeframe_start = None
+        goal.last_checked_date = None
+        goal.streak_start_date = None
 
     def _render_description(self, cfg, goal, profile):
-        tiers = cfg.get('tiers', [])
-        current_tier = goal.tier or 0
-        if current_tier < len(tiers):
-            desc_template = tiers[current_tier].get('description_template', cfg['description_template'])
+        intensities = cfg.get('intensities', [])
+        current_intensity = goal.tier or 0
+        if current_intensity < len(intensities):
+            desc_template = intensities[current_intensity].get('description_template', cfg['description_template'])
         else:
             desc_template = cfg['description_template']
 
         pct = cfg.get('default_threshold_pct', 0) or 0
-        if current_tier < len(tiers):
-            pct = tiers[current_tier].get('threshold_pct') or pct
+        if current_intensity < len(intensities):
+            pct = intensities[current_intensity].get('threshold_pct') or pct
 
         return desc_template.format(
             target=int(goal.target_value) if goal.target_value == int(goal.target_value) else goal.target_value,
@@ -1124,7 +1123,27 @@ class GoalsEngine:
             current=goal.current_value,
         )
 
-    def toggle_goal(self, goal_id: str, user_id: int, target_date: str = None):
+    def toggle_goal(self, goal_id: str, user_id: int):
+        session = self._get_session()
+        try:
+            goal = session.query(UserGoal).filter(
+                UserGoal.user_id == user_id,
+                UserGoal.goal_id == goal_id
+            ).first()
+            if not goal:
+                return {'error': 'Goal not found'}, 404
+
+            if goal.status == 'active':
+                goal.status = 'inactive'
+            else:
+                return {'error': 'Use activate endpoint to activate with intensity'}, 400
+
+            session.commit()
+            return {'status': 'ok', 'goal_id': goal_id, 'new_status': goal.status}
+        finally:
+            session.close()
+
+    def activate_goal(self, goal_id: str, user_id: int, intensity: int, target_date: str = None):
         if target_date is None:
             target_date = date.today().isoformat()
         parsed_date = datetime.strptime(target_date, '%Y-%m-%d').date()
@@ -1138,21 +1157,27 @@ class GoalsEngine:
             if not goal:
                 return {'error': 'Goal not found'}, 404
 
-            if goal.status == 'inactive':
-                goal.status = 'active'
-                goal.current_value = 0
-                goal.current_streak = 0
-                goal.completed = False
-                goal.pending_claim = False
-                goal.tier = 0
-                goal.timeframe_start = parsed_date
-                goal.last_checked_date = None
-                goal.streak_start_date = parsed_date
-            else:
-                goal.status = 'inactive'
+            cfg = next((c for c in self._load_config() if c.get('goal_id') == goal_id), None)
+            if not cfg:
+                return {'error': 'Goal config not found'}, 404
+
+            intensities = cfg.get('intensities', [])
+            if intensity < 0 or intensity >= len(intensities):
+                return {'error': 'Invalid intensity level'}, 400
+
+            goal.status = 'active'
+            goal.tier = intensity
+            goal.current_value = 0
+            goal.current_streak = 0
+            goal.completed = False
+            goal.pending_claim = False
+            goal.target_value = float(intensities[intensity]['target'])
+            goal.timeframe_start = parsed_date
+            goal.last_checked_date = None
+            goal.streak_start_date = parsed_date
 
             session.commit()
-            return {'status': 'ok', 'goal_id': goal_id, 'new_status': goal.status}
+            return {'status': 'ok', 'goal_id': goal_id, 'intensity': intensity}
         finally:
             session.close()
 
@@ -1172,18 +1197,14 @@ class GoalsEngine:
             if not cfg:
                 return {'error': 'Goal config not found'}, 404
 
-            tiers = cfg.get('tiers', [])
-            current_tier = goal.tier or 0
-            if current_tier + 1 < len(tiers):
-                reward = tiers[current_tier + 1]['reward']
-            else:
-                reward = tiers[current_tier]['reward'] if current_tier < len(tiers) else cfg['completion_reward']
+            intensities = cfg.get('intensities', [])
+            current_intensity = goal.tier or 0
+            reward = intensities[current_intensity]['reward'] if current_intensity < len(intensities) else cfg['completion_reward']
 
             self._complete_goal(goal, cfg, session)
-            goal.pending_claim = False
             session.commit()
 
-            return {'status': 'ok', 'tier': goal.tier, 'completed': goal.completed, 'reward': reward}
+            return {'status': 'ok', 'reward': reward}
         finally:
             session.close()
 

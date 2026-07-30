@@ -5,6 +5,8 @@ class GoalsManager {
         this._prevFilled = null;
         this._prevGoalStates = null;
         this._ff = { running: false };
+        this._intensityModal = null;
+        this._activeGoalForPicker = null;
         this._setupDelegation();
     }
 
@@ -32,7 +34,7 @@ class GoalsManager {
             const card = btn.closest('[data-goal-id]');
             if (!card) return;
             const goalId = card.getAttribute('data-goal-id');
-            if (goalId) this.toggleGoal(goalId);
+            if (goalId) this._handleToggleClick(goalId);
         });
 
         document.addEventListener('click', (e) => {
@@ -41,6 +43,126 @@ class GoalsManager {
             const goalId = claimBtn.getAttribute('data-goal-id');
             if (goalId) this.claimGoal(goalId);
         });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.intensity-close')) {
+                this._closeIntensityPicker();
+                return;
+            }
+            if (e.target.closest('.intensity-modal-overlay') && !e.target.closest('.intensity-modal-content')) {
+                this._closeIntensityPicker();
+                return;
+            }
+            const btn = e.target.closest('.intensity-btn');
+            if (!btn) return;
+            const intensity = parseInt(btn.getAttribute('data-intensity'), 10);
+            if (this._activeGoalForPicker !== null && !isNaN(intensity)) {
+                this._activateWithIntensity(this._activeGoalForPicker, intensity);
+            }
+        });
+    }
+
+    _handleToggleClick(goalId) {
+        const card = this._container.querySelector(`[data-goal-id="${goalId}"]`);
+        if (!card) return;
+        const isActive = card.querySelector('.goal-toggle.active') !== null;
+        if (isActive) {
+            this._deactivateGoal(goalId);
+        } else {
+            this._showIntensityPicker(goalId);
+        }
+    }
+
+    _getIntensityLabel(goalId, cfg) {
+        if (!cfg) return '';
+        const target = cfg.target;
+        const threshold = cfg.threshold_pct || 0;
+        const budgetScale = cfg.budget_scale;
+
+        if (goalId === 'budget_streak') {
+            if (threshold > 0) return `${target}+${threshold}%`;
+            return `${target} days`;
+        }
+        if (goalId === 'weekly_reduction') {
+            const pct = Math.round((budgetScale || 1) * 100);
+            return `${pct}%`;
+        }
+        if (goalId === 'offpeak_shift') {
+            return `${threshold}% off`;
+        }
+        return `${target}`;
+    }
+
+    _showIntensityPicker(goalId) {
+        const goals = this._currentGoals;
+        if (!goals) return;
+        const goal = goals.find(g => g.goal_id === goalId);
+        if (!goal || !goal.intensity_config) return;
+
+        this._activeGoalForPicker = goalId;
+
+        if (!this._intensityModal) {
+            this._intensityModal = document.createElement('div');
+            this._intensityModal.className = 'intensity-modal-overlay';
+            document.body.appendChild(this._intensityModal);
+        }
+
+        const intensities = goal.intensity_config;
+        const currentIntensity = goal.status === 'active' ? goal.intensity : -1;
+
+        const buttonsHtml = intensities.map((cfg, i) => `
+            <button class="intensity-btn ${i === currentIntensity ? 'active' : ''}" data-intensity="${i}">
+                <span class="intensity-btn-label">${this._escapeHtml(this._getIntensityLabel(goal.goal_id, cfg))}</span>
+                <span class="intensity-btn-reward">+${cfg.reward}</span>
+            </button>
+        `).join('');
+
+        this._intensityModal.innerHTML = `
+            <div class="intensity-modal-content">
+                <h2 class="intensity-title">Intensity</h2>
+                <div class="intensity-buttons">
+                    ${buttonsHtml}
+                </div>
+                <button class="intensity-close">Close</button>
+            </div>
+        `;
+        this._intensityModal.classList.add('show');
+    }
+
+    _closeIntensityPicker() {
+        if (this._intensityModal) {
+            this._intensityModal.classList.remove('show');
+        }
+        this._activeGoalForPicker = null;
+    }
+
+    async _activateWithIntensity(goalId, intensity) {
+        this._closeIntensityPicker();
+        try {
+            const result = await energyAPI.request(`/api/goals/${goalId}/activate`, {
+                method: 'POST',
+                body: JSON.stringify({ intensity }),
+            });
+            if (result.status === 'ok') {
+                await this.loadGoals();
+            }
+        } catch (err) {
+            console.error('Failed to activate goal:', err);
+        }
+    }
+
+    async _deactivateGoal(goalId) {
+        try {
+            const result = await energyAPI.request(`/api/goals/${goalId}/toggle`, {
+                method: 'POST',
+                body: '{}',
+            });
+            if (result.status === 'ok') {
+                await this.loadGoals();
+            }
+        } catch (err) {
+            console.error('Failed to deactivate goal:', err);
+        }
     }
 
     async loadGoals() {
@@ -53,6 +175,7 @@ class GoalsManager {
                 ? `/api/goals?date=${targetDate}&_=${Date.now()}`
                 : `/api/goals?_=${Date.now()}`;
             const data = await energyAPI.request(url);
+            this._currentGoals = data.goals || [];
             this._render(data);
         } catch (err) {
             this._showError('Failed to load goals.');
@@ -79,6 +202,8 @@ class GoalsManager {
         `;
 
         goals.sort((a, b) => (a.status === 'active' ? -1 : 1));
+
+        this._checkNotifications(goals);
 
         const cardsHtml = goals.map(g => this._renderCard(g)).join('');
 
@@ -110,17 +235,15 @@ class GoalsManager {
 
     _renderCard(goal) {
         const isActive = goal.status === 'active';
-        const isCompleted = goal.completed;
         const isClaimable = goal.pending_claim;
-        const activeClass = isActive && !isCompleted ? '' : 'inactive';
-        const completedClass = isCompleted ? 'completed' : '';
+        const activeClass = isActive ? '' : 'inactive';
 
         const progressHtml = goal.type === 'streak'
             ? this._renderSegmented(goal)
             : this._renderLinear(goal);
 
-        const tierHtml = goal.max_tiers > 1
-            ? `<div class="goal-tier">Tier ${goal.tier + 1}/${goal.max_tiers}</div>`
+        const intensityHtml = goal.max_intensities > 1
+            ? `<div class="goal-tier">Intensity ${goal.intensity + 1}/${goal.max_intensities}</div>`
             : '';
 
         const rewardHtml = isClaimable
@@ -129,22 +252,22 @@ class GoalsManager {
                        <div class="goal-metric-value">Claim!</div>
                        <div class="goal-metric-label">+${goal.completion_reward} pts</div>
                    </button>
-                   ${tierHtml}
+                   ${intensityHtml}
                </div>`
             : `<div class="goal-metric-box reward">
                    <div class="goal-metric-value">+${goal.completion_reward}</div>
                    <div class="goal-metric-label">Reward</div>
-                   ${tierHtml}
+                   ${intensityHtml}
                </div>`;
 
         return `
             <div class="goal-card ${activeClass}" data-goal-id="${goal.goal_id}">
                 <div class="goal-activation">
-                    <button class="goal-toggle ${isActive && !isCompleted ? 'active' : ''}"
+                    <button class="goal-toggle ${isActive ? 'active' : ''}"
                             aria-label="${isActive ? 'Deactivate' : 'Activate'} goal"></button>
                 </div>
                 <div class="goal-body">
-                    <div class="goal-description ${completedClass}">${this._escapeHtml(goal.description)}</div>
+                    <div class="goal-description">${this._escapeHtml(goal.description)}</div>
                     <div class="goal-progress">${progressHtml}</div>
                 </div>
                 ${rewardHtml}
@@ -232,17 +355,7 @@ class GoalsManager {
     }
 
     async toggleGoal(goalId) {
-        try {
-            const result = await energyAPI.request(`/api/goals/${goalId}/toggle`, {
-                method: 'POST',
-                body: '{}',
-            });
-            if (result.status === 'ok') {
-                await this.loadGoals();
-            }
-        } catch (err) {
-            console.error('Failed to toggle goal:', err);
-        }
+        this._handleToggleClick(goalId);
     }
 
     async claimGoal(goalId) {
@@ -261,6 +374,7 @@ class GoalsManager {
                     this._animateCounter(prevPoints, newPoints, 'goals-counter');
                     this._triggerConfetti();
                 }
+                this._showNotification('reset', 'Goal reset — keep going!');
             }
         } catch (err) {
             console.error('Failed to claim goal:', err);
@@ -297,7 +411,7 @@ class GoalsManager {
                 this._prevGoalStates[g.goal_id] = {
                     completed: g.completed,
                     current_streak: g.current_streak,
-                    tier: g.tier,
+                    intensity: g.intensity,
                     pending_claim: g.pending_claim,
                 };
             });
@@ -310,17 +424,13 @@ class GoalsManager {
                 this._prevGoalStates[g.goal_id] = {
                     completed: g.completed,
                     current_streak: g.current_streak,
-                    tier: g.tier,
+                    intensity: g.intensity,
                     pending_claim: g.pending_claim,
                 };
                 return;
             }
 
-            if (!prev.completed && g.completed) {
-                this._showNotification('success', g.description);
-            } else if (g.tier !== undefined && prev.tier !== undefined && g.tier > prev.tier) {
-                this._showNotification('tier', g.description);
-            } else if (!prev.pending_claim && g.pending_claim) {
+            if (!prev.pending_claim && g.pending_claim) {
                 this._showNotification('claim', g.description);
             } else if (prev.current_streak > 0 && g.current_streak === 0 && !g.completed && !g.pending_claim) {
                 this._showNotification('failure', g.description);
@@ -329,7 +439,7 @@ class GoalsManager {
             this._prevGoalStates[g.goal_id] = {
                 completed: g.completed,
                 current_streak: g.current_streak,
-                tier: g.tier,
+                intensity: g.intensity,
                 pending_claim: g.pending_claim,
             };
         });
@@ -346,12 +456,11 @@ class GoalsManager {
         const notif = document.createElement('div');
         notif.className = `goal-notification goal-notification-${type}`;
 
-        const icons = { success: '&#127881;', tier: '&#127942;', claim: '&#127873;', failure: '&#9888;' };
+        const icons = { claim: '&#127873;', failure: '&#9888;', reset: '&#127881;' };
         const titles = {
-            success: 'Congratulations! Goal completed!',
-            tier: 'Goal tier advanced! Keep going!',
             claim: 'Goal reached! Claim your reward!',
             failure: 'Goal was not met and has been reset. Try again!',
+            reset: 'Goal reset — keep going!',
         };
         const icon = icons[type] || icons.failure;
         const title = titles[type] || titles.failure;
@@ -426,6 +535,7 @@ class GoalsManager {
         if (typeof dashboard !== 'undefined') dashboard._dayFF.claimableStop = false;
         this._prevFilled = {};
         this._prevGoalStates = null;
+        this._currentGoals = null;
         try {
             await energyAPI.request('/api/goals/reset', { method: 'POST' });
             energyAPI.clearCache();
