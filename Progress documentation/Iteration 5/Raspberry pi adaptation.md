@@ -1,0 +1,1 @@
+Currently it can run on chromium on the raspberry pi, but 
