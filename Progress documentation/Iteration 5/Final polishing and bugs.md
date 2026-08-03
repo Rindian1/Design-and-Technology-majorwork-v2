@@ -2,4 +2,6 @@
 
 2) When fast foward button is pressed on home page, both the normal play button AND fast foward button display as being unpaused. Instead ONLY the fast foward button should display as being unpaused.
 
-3) Add a warning when the user tries to reset points, saying 'are you sure you would like to do this'
+3) Add a warning when the user tries to reset points, saying 'are you sure you would like to do this' 
+
+4) The text on the home page, when in light mode is too low contrast, hard to read.
