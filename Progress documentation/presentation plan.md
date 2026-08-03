@@ -1,0 +1,1 @@
+1) Video starts, panning to the product, taking 2/3rds of frame, with the product name and introduction coming up, with the background out of focus

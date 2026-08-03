@@ -1,5 +1,17 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html {
+  -webkit-tap-highlight-color: transparent;
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  display: none;
+}
+html, body {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
 .hidden { display: none !important; }
 
 :focus-visible {
@@ -12,6 +24,8 @@ body {
   color: var(--text-body);
   line-height: 1.5;
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
   background-color: var(--bg-page);
   transition: background-color 0.3s, color 0.3s;
 }
@@ -105,8 +119,8 @@ body {
 }
 .ff-btn {
   font-size: 13px;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
 }
 .ff-btn.running {
   background: var(--accent);
@@ -714,6 +728,7 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 80vh;
+  min-height: 80dvh;
   padding: 20px 0;
 }
 .auth-card {
@@ -1015,7 +1030,7 @@ body {
   }
   100% {
     opacity: 0;
-    transform: translateY(100vh) rotate(720deg) scale(0.3);
+    transform: translateY(100dvh) rotate(720deg) scale(0.3);
   }
 }
 
@@ -1146,8 +1161,8 @@ body {
 }
 .ff-goals-btn {
   font-size: 13px;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.15);
   background: transparent;
@@ -1175,8 +1190,8 @@ body {
 }
 .ff-goals-reset {
   font-size: 15px;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.15);
   background: transparent;
@@ -1229,12 +1244,12 @@ body {
 }
 .goal-activation {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
 }
 .goal-toggle {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.15);
   background: transparent;
@@ -1998,7 +2013,7 @@ body {
   border-radius: 20px;
   max-width: 420px;
   width: 90%;
-  max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
 }
 .modal-form-wide {
@@ -2021,8 +2036,8 @@ body {
   font-size: 24px;
   color: var(--text-dim);
   cursor: pointer;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2336,4 +2351,94 @@ body {
 .info-heading .info-trigger {
   position: relative;
   top: -1px;
+}
+
+/* ── On-Screen Keyboard ── */
+.osk {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  background: var(--bg-dropdown);
+  border-top: 1px solid var(--border-visible);
+  padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+}
+.osk-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 0 4px;
+}
+.osk-bar-label {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.osk-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 5px;
+  justify-content: center;
+}
+.osk-row:last-child {
+  margin-bottom: 0;
+}
+.osk-key {
+  flex: 0 1 auto;
+  min-width: 7%;
+  height: 44px;
+  padding: 0 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-faint);
+  color: var(--text-primary);
+  font-size: 17px;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+.osk-key:active {
+  background: var(--bg-hover-strong);
+}
+.osk-key.osk-shift,
+.osk-key.osk-toggle,
+.osk-key.osk-hide,
+.osk-key.osk-action {
+  background: var(--bg-hover);
+  font-size: 14px;
+  min-width: 9%;
+}
+.osk-key.osk-shift.active,
+.osk-shift-on .osk-key.osk-shift {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.osk-key.osk-enter {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  min-width: 10%;
+}
+.osk-key.osk-space {
+  flex: 1 1 auto;
+  max-width: 42%;
+  min-width: 25%;
+}
+.osk-shift-on .osk-key[data-key] {
+  text-transform: uppercase;
 }
