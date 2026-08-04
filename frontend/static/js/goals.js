@@ -8,6 +8,7 @@ class GoalsManager {
         this._intensityModal = null;
         this._activeGoalForPicker = null;
         this._setupDelegation();
+        this._setupResetConfirm();
     }
 
     _setupDelegation() {
@@ -20,7 +21,7 @@ class GoalsManager {
             const resetBtn = e.target.closest('#ff-goals-reset');
             if (resetBtn) {
                 e.stopPropagation();
-                this._resetGoals();
+                this._openResetConfirm();
                 return;
             }
             const notif = e.target.closest('.goal-notification');
@@ -60,6 +61,30 @@ class GoalsManager {
                 this._activateWithIntensity(this._activeGoalForPicker, intensity);
             }
         });
+    }
+
+    _setupResetConfirm() {
+        const modal = document.getElementById('confirm-modal');
+        if (!modal) return;
+        const hide = () => modal.classList.add('hidden');
+        const okBtn = document.getElementById('confirm-ok');
+        const cancelBtn = document.getElementById('confirm-cancel');
+        if (okBtn) okBtn.addEventListener('click', () => {
+            hide();
+            this._resetGoals();
+        });
+        if (cancelBtn) cancelBtn.addEventListener('click', hide);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) hide();
+        });
+    }
+
+    _openResetConfirm() {
+        const modal = document.getElementById('confirm-modal');
+        if (!modal) return;
+        const message = document.getElementById('confirm-message');
+        if (message) message.textContent = 'Are you sure you would like to do this?';
+        modal.classList.remove('hidden');
     }
 
     _handleToggleClick(goalId) {

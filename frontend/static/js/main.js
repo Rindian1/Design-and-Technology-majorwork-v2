@@ -211,7 +211,6 @@ class EnergyDashboard {
   async _startDayFF() {
     if (this._dayFF.running) return;
 
-    const ffBtn = document.getElementById('ff-btn');
     const ffDayBtn = document.getElementById('ff-day-btn');
     const ffTime = document.getElementById('ff-time');
 
@@ -236,8 +235,7 @@ class EnergyDashboard {
     this._dayFF.running = true;
     energyAPI.clearCache();
 
-    if (ffDayBtn) { ffDayBtn.classList.add('running'); ffDayBtn.innerHTML = '&#9646;&#9646;'; }
-    if (ffBtn) { ffBtn.classList.add('running'); ffBtn.innerHTML = '&#9646;&#9646;'; }
+    if (ffDayBtn) ffDayBtn.classList.add('running');
     if (ffTime) ffTime.classList.remove('hidden');
 
     this._updateDayFFDate(this._dayFF.date);
@@ -254,11 +252,9 @@ class EnergyDashboard {
 
     if (typeof goalsManager !== 'undefined') goalsManager._ff.running = false;
 
-    const ffBtn = document.getElementById('ff-btn');
     const ffDayBtn = document.getElementById('ff-day-btn');
     const ffTime = document.getElementById('ff-time');
-    if (ffDayBtn) { ffDayBtn.classList.remove('running'); ffDayBtn.innerHTML = '&#9193;'; }
-    if (ffBtn) { ffBtn.classList.remove('running'); ffBtn.innerHTML = '&#9654;'; }
+    if (ffDayBtn) ffDayBtn.classList.remove('running');
     if (ffTime) ffTime.classList.add('hidden');
 
     if (!manual && this._dayFF.dateBeforeFF) {
@@ -348,7 +344,6 @@ class EnergyDashboard {
     this.ff.running = true;
 
     ffBtn.classList.add('running');
-    ffBtn.innerHTML = '&#9646;&#9646;';
     ffTime.classList.remove('hidden');
 
     energyAPI.clearCache();
@@ -366,7 +361,6 @@ class EnergyDashboard {
     this.ff.timer = null;
 
     ffBtn.classList.remove('running');
-    ffBtn.innerHTML = '&#9654;';
     ffTime.classList.add('hidden');
 
     gaugeManager.loadDataForDate(navigation.getCurrentDate());

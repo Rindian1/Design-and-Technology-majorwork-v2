@@ -490,6 +490,12 @@ body {
 .modal-close:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
 .modal-body { padding: 16px 20px 20px; }
 .modal-body p { font-size: 13px; color: var(--text-pale); line-height: 1.6; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 20px 20px;
+}
 
 /* ── General Insights ── */
 .general-insights {
@@ -1001,8 +1007,8 @@ body {
   height: 18px;
 }
 .ff-icon {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 .points-badge-value {
   font-variant-numeric: tabular-nums;

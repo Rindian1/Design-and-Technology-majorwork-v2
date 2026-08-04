@@ -517,7 +517,7 @@ class RecommendationsManager {
 
         this._ff.running = true;
         this._ff.date = range.earliest;
-        if (ffBtn) { ffBtn.classList.add('running'); ffBtn.innerHTML = '&#9646;&#9646;'; }
+        if (ffBtn) ffBtn.classList.add('running');
         if (ffTime) ffTime.classList.remove('hidden');
 
         energyAPI.clearCache();
@@ -533,7 +533,7 @@ class RecommendationsManager {
         this._ff.running = false;
         this._ff.timer = null;
 
-        if (ffBtn) { ffBtn.classList.remove('running'); ffBtn.innerHTML = '&#9654;'; }
+        if (ffBtn) ffBtn.classList.remove('running');
         if (ffTime) ffTime.classList.add('hidden');
     }
 
@@ -552,7 +552,7 @@ class RecommendationsManager {
             if (data && data.weekly_spending && data.weekly_spending.length > 0) {
                 this._renderGeneralDetailed(data);
                 const ffBtn = document.getElementById('ff-btn');
-                if (ffBtn) { ffBtn.classList.add('running'); ffBtn.innerHTML = '&#9646;&#9646;'; }
+                if (ffBtn) ffBtn.classList.add('running');
                 const ffTime = document.getElementById('ff-time');
                 if (ffTime) ffTime.classList.remove('hidden');
             }
