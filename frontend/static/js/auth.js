@@ -51,6 +51,7 @@ class AuthManager {
             const steps = [...new Set(questions.map(q => q.step))].sort();
             let currentStep = 0;
             const answers = initialAnswers ? JSON.parse(JSON.stringify(initialAnswers)) : {};
+            this._plugStep = { added: false, connected: false, prefill: null };
 
             if (showCancel) {
                 const existingCancel = container.querySelector('.survey-cancel-bar');
@@ -67,8 +68,16 @@ class AuthManager {
 
             const render = () => {
                 const stepQs = questions.filter(q => q.step === steps[currentStep]);
+                const stepVal = steps[currentStep];
 
-                if (currentStep === 1) {
+                if (stepVal === 0) {
+                    this._renderPlugConnectionStep(container, stepQs, answers, steps, currentStep, () => {
+                        currentStep++;
+                        render();
+                    }, () => {
+                        if (currentStep > 0) { currentStep--; render(); }
+                    });
+                } else if (stepVal === 2) {
                     this._renderStep2(container, stepQs, answers, steps, currentStep, () => {
                         currentStep++;
                         render();
@@ -114,6 +123,178 @@ class AuthManager {
         container.innerHTML = html;
         this._attachFieldBehaviours(container, questions, answers);
         this._wireActions(container, questions, answers, currentStep, steps, onNext, onPrev);
+    }
+
+    _renderPlugConnectionStep(container, questions, answers, steps, currentStep, onNext, onPrev) {
+        const snapshot = answers['_plug_connection'] || {};
+        const backBtn = currentStep > 0 ? '<button type="button" class="btn btn-secondary" id="survey-prev">Back</button>' : '';
+        let html = this._stepIndicator(steps, currentStep);
+        html += `<h3 class="survey-step-title">Step ${currentStep + 1} of ${steps.length}</h3>`;
+        html += `<p class="survey-desc">${questions[0]?.description || 'Connect your plug to get started.'}</p>`;
+        html += `<div id="plug-connected-banner" class="survey-connected-banner hidden">Plug already connected — review the details below, then continue.</div>`;
+        html += `<div class="survey-fields plug-fields">`;
+        html += `<div class="add-plug-columns">`;
+        html += `<div class="form-section"><h3 class="form-section-title">TAPO ACCOUNT INFO</h3>`;
+        html += `<div class="form-group"><label for="plug-email">Email</label><input type="email" id="plug-email" class="form-input" placeholder="your@email.com" autocomplete="email" value="${this._escapeHtml(snapshot.email || '')}"></div>`;
+        html += `<div class="form-group"><label for="plug-password">Password</label><div class="password-wrap"><input type="password" id="plug-password" class="form-input" placeholder="TAPO account password" autocomplete="off"><button class="eye-btn" id="plug-password-toggle" type="button" aria-label="Toggle password visibility">👁</button></div></div>`;
+        html += `</div>`;
+        html += `<div class="form-section"><h3 class="form-section-title">PLUG INFO</h3>`;
+        html += `<div class="form-group"><label for="plug-ip">IP address</label><input type="text" id="plug-ip" class="form-input" placeholder="xxx.xxx.x.xxx" autocomplete="off" value="${this._escapeHtml(snapshot.ip_address || '')}"></div>`;
+        html += `<div class="form-group"><label for="plug-model">Model</label><input type="text" id="plug-model" class="form-input" placeholder="e.g. P110" autocomplete="off" value="${this._escapeHtml(snapshot.model || '')}"></div>`;
+        html += `<div class="form-group"><label for="plug-name">Plug name</label><input type="text" id="plug-name" class="form-input" placeholder="e.g. Heater" autocomplete="off" value="${this._escapeHtml(snapshot.name || '')}"></div>`;
+        html += `</div>`;
+        html += `</div>`;
+        html += `<div class="preset-tags">`;
+        html += `<button type="button" class="preset-tag" data-name="Heater">Heater</button>`;
+        html += `<button type="button" class="preset-tag" data-name="Fridge">Fridge</button>`;
+        html += `<button type="button" class="preset-tag" data-name="Light">Light</button>`;
+        html += `</div>`;
+        html += `<p class="form-error" id="plug-connect-error"></p>`;
+        html += `</div>`;
+        html += `<div class="survey-actions">${backBtn}<button type="button" class="btn btn-primary" id="survey-next">Next</button></div>`;
+        html += `<div class="survey-skip-row"><button type="button" class="survey-skip" id="survey-skip">Skip</button></div>`;
+        container.innerHTML = html;
+        this._wirePlugConnectionStep(container, answers, onNext, onPrev);
+        this._loadPlugConnectionState(container, answers);
+    }
+
+    _wirePlugConnectionStep(container, answers, onNext, onPrev) {
+        document.getElementById('survey-prev')?.addEventListener('click', onPrev);
+
+        const toggle = document.getElementById('plug-password-toggle');
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                const pw = document.getElementById('plug-password');
+                if (pw) pw.type = pw.type === 'password' ? 'text' : 'password';
+            });
+        }
+
+        container.querySelectorAll('.preset-tag[data-name]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const nameEl = document.getElementById('plug-name');
+                if (nameEl) nameEl.value = btn.dataset.name;
+            });
+        });
+
+        document.getElementById('survey-skip')?.addEventListener('click', () => onNext());
+
+        document.getElementById('survey-next')?.addEventListener('click', () => {
+            this._submitPlugConnection(container, answers, onNext);
+        });
+    }
+
+    async _loadPlugConnectionState(container, answers) {
+        const emailEl = document.getElementById('plug-email');
+        const passEl = document.getElementById('plug-password');
+        const banner = document.getElementById('plug-connected-banner');
+        if (!emailEl || !passEl || !banner) return;
+
+        let credsEmail = '';
+        let hasPassword = false;
+        try {
+            const creds = await energyAPI.request('/api/plugs/credentials');
+            credsEmail = creds.email || '';
+            hasPassword = !!creds.has_password;
+        } catch (e) { /* not connected yet */ }
+
+        const snapshot = answers['_plug_connection'] || {};
+        const prefill = {
+            email: snapshot.email || credsEmail || '',
+            ip: snapshot.ip_address || '',
+            model: snapshot.model || '',
+            name: snapshot.name || '',
+        };
+
+        if (!snapshot.ip_address) {
+            try {
+                const res = await energyAPI.request('/api/plugs');
+                const plug = res.plugs && res.plugs[0];
+                if (plug) {
+                    prefill.ip = prefill.ip || plug.ip_address || '';
+                    prefill.model = prefill.model || plug.model || '';
+                    prefill.name = prefill.name || plug.name || '';
+                }
+                hasPassword = hasPassword || !!res.credentials_ok;
+                if (res.plugs && res.plugs.length > 0) hasPassword = true;
+            } catch (e) { /* ignore */ }
+        }
+
+        emailEl.value = prefill.email;
+        const ipEl = document.getElementById('plug-ip');
+        const modelEl = document.getElementById('plug-model');
+        const nameEl = document.getElementById('plug-name');
+        if (ipEl) ipEl.value = prefill.ip;
+        if (modelEl) modelEl.value = prefill.model;
+        if (nameEl) nameEl.value = prefill.name;
+
+        this._plugStep.prefill = { email: prefill.email, ip: prefill.ip, model: prefill.model, name: prefill.name };
+
+        if (hasPassword) {
+            this._plugStep.connected = true;
+            banner.classList.remove('hidden');
+            passEl.placeholder = 'Leave blank to keep saved password';
+        }
+    }
+
+    async _submitPlugConnection(container, answers, onNext) {
+        if (this._plugStep.added) { onNext(); return; }
+
+        const emailEl = document.getElementById('plug-email');
+        const passEl = document.getElementById('plug-password');
+        const ipEl = document.getElementById('plug-ip');
+        const modelEl = document.getElementById('plug-model');
+        const nameEl = document.getElementById('plug-name');
+        const errorEl = document.getElementById('plug-connect-error');
+        const nextBtn = document.getElementById('survey-next');
+        if (errorEl) errorEl.textContent = '';
+
+        const email = emailEl ? emailEl.value.trim() : '';
+        const password = passEl ? passEl.value : '';
+        const ip = ipEl ? ipEl.value.trim() : '';
+        const model = modelEl ? modelEl.value.trim() : '';
+        const name = nameEl ? nameEl.value.trim() : '';
+
+        const pref = this._plugStep.prefill;
+        const changed = !pref || pref.email !== email || pref.ip !== ip || pref.model !== model || pref.name !== name;
+
+        if (this._plugStep.connected && !changed && password === '') {
+            answers['_plug_connection'] = { email, ip_address: ip, model, name };
+            this._plugStep.added = true;
+            onNext();
+            return;
+        }
+
+        if (!email || !password || !ip || !name) {
+            if (errorEl) errorEl.textContent = 'Please fill in your TAPO email, password, plug IP and plug name.';
+            return;
+        }
+
+        if (nextBtn) { nextBtn.disabled = true; nextBtn.textContent = 'Connecting...'; }
+
+        try {
+            const data = await energyAPI.request('/api/plugs', {
+                method: 'POST',
+                body: JSON.stringify({ email, password, ip_address: ip, model, name }),
+            });
+            answers['_plug_connection'] = { email, ip_address: ip, model, name };
+            this._plugStep.added = true;
+            this._plugStep.connected = true;
+            onNext();
+        } catch (err) {
+            if (err.message && err.message.includes('already exists')) {
+                answers['_plug_connection'] = { email, ip_address: ip, model, name };
+                this._plugStep.added = true;
+                this._plugStep.connected = true;
+                onNext();
+                return;
+            }
+            if (errorEl) errorEl.textContent = err.message || 'Failed to connect plug.';
+            if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = 'Next'; }
+        }
+    }
+
+    _escapeHtml(str) {
+        return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
     _renderStep2(container, questions, answers, steps, currentStep, onNext, onPrev, onDone) {

@@ -1,5 +1,16 @@
 SURVEY_QUESTIONS = [
     # ══════════════════════════════════════════
+    # Step 0: Plug connection
+    # ══════════════════════════════════════════
+    {
+        "step": 0,
+        "id": "_plug_connection",
+        "type": "plug_connection",
+        "label": "Connect your plug",
+        "description": "Enter your TAPO account details and plug information to get started.",
+        "required": True,
+    },
+    # ══════════════════════════════════════════
     # Step 1: Appliance
     # ══════════════════════════════════════════
     {
