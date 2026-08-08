@@ -22,6 +22,14 @@ def create_app():
 
     CORS(app, supports_credentials=True)
 
+    @app.after_request
+    def no_cache_html(response):
+        if response.mimetype == 'text/html':
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+        return response
+
+
     db = DatabaseSession(HEATING_DB_PATH)
     db.create_tables()
     db.close()
