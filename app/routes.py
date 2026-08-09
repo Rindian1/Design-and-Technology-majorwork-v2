@@ -1,4 +1,5 @@
 from functools import wraps
+import subprocess
 
 from flask import render_template, jsonify, session, request
 from datetime import datetime
@@ -41,6 +42,13 @@ def register_routes(app):
     @app.route('/survey')
     def survey_page():
         return render_template('survey.html')
+
+    @app.route('/api/kiosk/exit', methods=['POST'])
+    @login_required
+    def kiosk_exit():
+        for name in ('chromium', 'chromium-browser'):
+            subprocess.Popen(['pkill', '-f', name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return jsonify({'ok': True})
 
     @app.route('/api/profile')
     @login_required

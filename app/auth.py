@@ -5,7 +5,7 @@ from flask import Blueprint, session, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import func
 
-from config import HEATING_DB_PATH, PLUG_DEMO_USER_ID, PLUG_DEMO_EMAIL, PLUGS_CONFIG
+from config import HEATING_DB_PATH
 from app.models import User, UserProfile, DatabaseSession, UserPlug, TapoCredentials
 from app.survey_config import SURVEY_QUESTIONS
 
@@ -191,61 +191,6 @@ def demo_login():
             session_db.add(profile)
         session_db.commit()
 
-        return jsonify({'user': user.to_dict()})
-    finally:
-        session_db.close()
-        db.close()
-
-
-@auth_bp.route('/api/auth/plug-demo', methods=['POST'])
-def plug_demo_login():
-    session['user_id'] = PLUG_DEMO_USER_ID
-    session['email'] = PLUG_DEMO_EMAIL
-
-    db = DatabaseSession(HEATING_DB_PATH)
-    try:
-        session_db = db.get_session()
-        user = session_db.query(User).filter(User.id == PLUG_DEMO_USER_ID).first()
-        if not user:
-            user = User(
-                id=PLUG_DEMO_USER_ID,
-                email=PLUG_DEMO_EMAIL,
-                password_hash=generate_password_hash('plugdemo'),
-                created_at=datetime.now(),
-            )
-            session_db.add(user)
-            session_db.flush()
-
-        profile = session_db.query(UserProfile).filter(UserProfile.user_id == PLUG_DEMO_USER_ID).first()
-        if not profile:
-            profile = UserProfile(
-                user_id=PLUG_DEMO_USER_ID,
-                survey_data=json.dumps({
-                    'appliance_type': 'lamp',
-                    'power_rating': '60',
-                    'appliance_model': 'Smart Lamp',
-                    'knows_plan': 'no',
-                    'peak_charge': '30',
-                    'intentions': ['monitor'],
-                    'monthly_budget_dollars': '50',
-                }),
-            )
-            session_db.add(profile)
-
-        plug_ip = list(PLUGS_CONFIG.values())[0] if PLUGS_CONFIG else '192.168.0.181'
-        existing_plug = session_db.query(UserPlug).filter(
-            UserPlug.user_id == PLUG_DEMO_USER_ID,
-            UserPlug.name == 'Lamp',
-        ).first()
-        if not existing_plug:
-            session_db.add(UserPlug(
-                name='Lamp',
-                ip_address=plug_ip,
-                model='TP-110',
-                user_id=PLUG_DEMO_USER_ID,
-            ))
-
-        session_db.commit()
         return jsonify({'user': user.to_dict()})
     finally:
         session_db.close()

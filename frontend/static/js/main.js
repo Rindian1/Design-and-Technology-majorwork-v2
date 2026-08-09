@@ -77,6 +77,17 @@ class EnergyDashboard {
       window.location.href = '/survey';
     });
 
+    document.getElementById('exit-btn')?.addEventListener('click', async () => {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen();
+        if (dropdown) dropdown.classList.remove('open');
+        return;
+      }
+      try {
+        await energyAPI.request('/api/kiosk/exit', { method: 'POST' });
+      } catch (err) { /* best-effort */ }
+    });
+
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
       await authManager.logout();
       window.location.href = '/login';

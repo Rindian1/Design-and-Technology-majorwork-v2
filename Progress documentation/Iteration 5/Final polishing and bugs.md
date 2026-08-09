@@ -9,3 +9,9 @@
 5) Make it so that in preferences, and the survey, the first thing that the user sees is the plug connection menu. 
 
 6) Onscreen keyboard takes up ENTIRE bottom half of screen when displayed on the rasp pi monitor
+
+7) Delete plug demo dashboard  
+
+8) Replace medal with a new SVG medal 
+
+9) Add an 'exit' button of some kind to the kiosk menu

@@ -1128,6 +1128,7 @@ body {
   cursor: pointer;
 }
 .user-dropdown button:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+.user-dropdown #exit-btn:hover { background: rgba(255,82,82,0.12); color: #ff5252; }
 .dropdown-sep { margin: 4px 0; border: none; height: 1px; background: rgba(255,255,255,0.06); }
 
 /* ── Responsive Updates ── */
@@ -1755,6 +1756,7 @@ body {
 .light-mode .dial-bg { stroke: var(--border-subtle); }
 .light-mode .user-dropdown { background: var(--bg-dropdown); }
 .light-mode .user-dropdown button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.light-mode .user-dropdown #exit-btn:hover { background: rgba(255,82,82,0.1); color: #ff5252; }
 .light-mode .dropdown-sep { background: var(--border-subtle); }
 .light-mode .header { background: var(--bg-card); }
 .light-mode .gi-chart-col,
@@ -2479,4 +2481,30 @@ body {
 }
 .osk-shift-on .osk-key[data-key] {
   text-transform: uppercase;
+}
+
+/* Compact keyboard for short viewports (kiosk / small Pi monitors) */
+@media (max-height: 760px) {
+  .osk {
+    padding: 5px 4px calc(5px + env(safe-area-inset-bottom));
+  }
+  .osk-bar {
+    margin-bottom: 3px;
+  }
+  .osk-row {
+    gap: 3px;
+    margin-bottom: 3px;
+  }
+  .osk-key {
+    height: 30px;
+    font-size: 14px;
+    padding: 0 4px;
+    border-radius: 6px;
+  }
+  .osk-key.osk-shift,
+  .osk-key.osk-toggle,
+  .osk-key.osk-hide,
+  .osk-key.osk-action {
+    font-size: 12px;
+  }
 }

@@ -119,10 +119,6 @@ class EnergyAPI {
         return this.request('/api/auth/demo', { method: 'POST' });
     }
 
-    async plugDemoLogin() {
-        return this.request('/api/auth/plug-demo', { method: 'POST' });
-    }
-
     async logout() {
         return this.request('/api/auth/logout', { method: 'POST' });
     }

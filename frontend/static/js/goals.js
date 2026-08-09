@@ -215,7 +215,7 @@ class GoalsManager {
 
         const headerHtml = `
             <div class="goals-header ${prevPoints !== null && points > prevPoints ? 'points-flash' : ''}">
-                <span class="goals-header-icon"><img src="/static/images/Medal.svg" alt="Medal" class="goals-header-img"></span>
+                <span class="goals-header-icon"><img src="/static/images/Medal.svg?v=1" alt="Medal" class="goals-header-img"></span>
                 <div>
                     <div class="goals-header-label">Your Points${INFO.icon('points')}</div>
                 </div>
@@ -528,7 +528,7 @@ class GoalsManager {
         this._container.innerHTML = `
             <h1 class="gi-title"><span class="info-heading">Goals${INFO.icon('feat_goals')}</span></h1>
             <div class="goals-header">
-                <span class="goals-header-icon"><img src="/static/images/Medal.svg" alt="Medal" class="goals-header-img"></span>
+                <span class="goals-header-icon"><img src="/static/images/Medal.svg?v=1" alt="Medal" class="goals-header-img"></span>
                 <div>
                     <div class="goals-header-label">Your Points${INFO.icon('points')}</div>
                 </div>
