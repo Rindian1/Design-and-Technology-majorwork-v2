@@ -16,11 +16,13 @@ on-screen keyboard, 44px touch targets) — see `Progress documentation/Iteratio
 ## Prerequisites
 
 - Raspberry Pi OS **Bookworm (64-bit)** with desktop, Wayland/labwc.
-- The repo cloned to `/home/pi/Design-and-Technology-majorwork-v2`:
+- The repo cloned into your home directory (e.g. `/home/pi/…` on a default setup,
+  `/home/rj/…` if your username is `rj`). Clone it with:
 
   ```bash
-  cd /home/pi
+  cd ~
   git clone https://github.com/Rindian1/Design-and-Technology-majorwork-v2.git
+  cd Design-and-Technology-majorwork-v2
   ```
 
 - Real TAPO plugs need **Python ≥ 3.11** (already the default on Bookworm).
@@ -33,15 +35,19 @@ on-screen keyboard, 44px touch targets) — see `Progress documentation/Iteratio
 ## Install
 
 ```bash
-cd /home/pi/Design-and-Technology-majorwork-v2
+cd ~/Design-and-Technology-majorwork-v2
 chmod +x deployment/pi_setup.sh
 deployment/pi_setup.sh                # without real plugs
 deployment/pi_setup.sh --with-plugs   # require Python >= 3.11
 ```
 
+The script substitutes your actual username into the systemd unit
+(`User=__USER__` is replaced with `whoami`), so it works regardless of the
+Linux user you set up.
+
 Then, before rebooting:
 
-1. Edit `/home/pi/Design-and-Technology-majorwork-v2/.env` and add your
+1. Edit `~/Design-and-Technology-majorwork-v2/.env` and add your
    `OPENAI_API_KEY` and (recommended) a fixed `SECRET_KEY`.
 2. Set screen blanking to OFF if desired:
    `sudo raspi-config` → **Display Options** → **Screen Blanking** → **No**

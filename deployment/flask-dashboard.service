@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
+User=__USER__
 WorkingDirectory=__REPO_DIR__
 EnvironmentFile=__REPO_DIR__/.env
 ExecStart=__REPO_DIR__/venv/bin/python run.py

@@ -67,7 +67,7 @@ else
 fi
 
 echo "==> Installing systemd service"
-sed -e "s|__REPO_DIR__|$REPO_DIR|g" \
+sed -e "s|__REPO_DIR__|$REPO_DIR|g" -e "s|__USER__|$(whoami)|g" \
   "$REPO_DIR/deployment/flask-dashboard.service" |
   sudo tee "/etc/systemd/system/$SERVICE_NAME.service" > /dev/null
 sudo systemctl daemon-reload
