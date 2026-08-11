@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Energy Monitoring Dashboard">
   <title>{% block title %}Energy Monitor{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=32">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=33">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -18,7 +18,7 @@
       <button class="tab-btn" data-tab="appliance">Appliance Insights</button>
       <button class="tab-btn" data-tab="plugs">Plugs</button>
       <div class="header-spacer"></div>
-      <span class="info-trigger" data-info-key="points" tabindex="0" role="button" aria-label="More info about points"><svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor" aria-hidden="true"><rect x="7.4" y="3" width="1.2" height="5.6" rx="0.6"/><circle cx="8" cy="11" r="1.1"/></svg></span>
+      <span class="info-trigger" data-info-key="points" tabindex="0" role="button" aria-label="More info about points"><svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><rect x="7.4" y="3" width="1.2" height="5.6" rx="0.6"/><circle cx="8" cy="11" r="1.1"/></svg></span>
       <button class="points-badge" id="points-badge" data-tab="goals" title="View Goals">
         <span class="points-badge-icon"><img src="/static/images/Medal.svg?v=1" alt="Medal" class="points-badge-img"></span>
         <span class="points-badge-value" id="points-badge-value">0</span>
@@ -78,16 +78,16 @@
     </div>
   </div>
 
-  <script src="{{ url_for('static', filename='js/info-popups.js') }}?v=7"></script>
+  <script src="{{ url_for('static', filename='js/info-popups.js') }}?v=8"></script>
   <script src="{{ url_for('static', filename='js/api.js') }}?v=5"></script>
   <script src="{{ url_for('static', filename='js/navigation.js') }}?v=5"></script>
   <script src="{{ url_for('static', filename='js/gauge.js') }}?v=5"></script>
   <script src="{{ url_for('static', filename='js/recommendations.js') }}?v=15"></script>
   <script src="{{ url_for('static', filename='js/goals.js') }}?v=20"></script>
-  <script src="{{ url_for('static', filename='js/auth.js') }}?v=7"></script>
+  <script src="{{ url_for('static', filename='js/auth.js') }}?v=8"></script>
   <script src="{{ url_for('static', filename='js/main.js') }}?v=20"></script>
   <script src="{{ url_for('static', filename='js/plugs.js') }}?v=4"></script>
-  <script src="{{ url_for('static', filename='js/keyboard.js') }}?v=1"></script>
+  <script src="{{ url_for('static', filename='js/keyboard.js') }}?v=2"></script>
   <script src="{{ url_for('static', filename='js/touch-scroll.js') }}?v=2"></script>
 </body>
 </html>

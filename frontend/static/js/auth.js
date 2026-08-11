@@ -386,7 +386,7 @@ class AuthManager {
             });
             html += `</div>`;
         } else if (q.type === 'number') {
-            html += `<input type="number" id="survey-${q.id}" class="survey-input" value="${val}" placeholder="${q.placeholder || ''}" min="${q.min || ''}" max="${q.max || ''}" ${q.required ? 'required' : ''}>`;
+            html += `<input type="text" inputmode="numeric" id="survey-${q.id}" class="survey-input survey-numeric" value="${val}" placeholder="${q.placeholder || ''}" min="${q.min || ''}" max="${q.max || ''}" ${q.required ? 'required' : ''}>`;
         } else if (q.type === 'text') {
             html += `<input type="text" id="survey-${q.id}" class="survey-input" value="${val}" placeholder="${q.placeholder || ''}">`;
         } else if (q.type === 'timerange') {
@@ -688,6 +688,10 @@ class AuthManager {
             }
             if (q.type === 'number') {
                 const num = Number(val);
+                if (Number.isNaN(num)) {
+                    alert(`${q.label} must be a valid number.`);
+                    return false;
+                }
                 if (q.min !== undefined && num < q.min) {
                     alert(`${q.label} must be at least ${q.min}.`);
                     return false;

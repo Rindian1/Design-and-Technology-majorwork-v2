@@ -2298,8 +2298,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 28px;
+  height: 28px;
   font-size: 12px;
   line-height: 1;
   border-radius: 50%;
@@ -2484,6 +2484,9 @@ body {
   max-width: 42%;
   min-width: 25%;
 }
+.osk-key.osk-fill {
+  flex: 1 1 auto;
+}
 .osk-shift-on .osk-key[data-key] {
   text-transform: uppercase;
 }
@@ -2501,15 +2504,15 @@ body {
     margin-bottom: 3px;
   }
   .osk-key {
-    height: 30px;
-    font-size: 14px;
+    height: 40px;
+    font-size: 16px;
     padding: 0 4px;
-    border-radius: 6px;
+    border-radius: 8px;
   }
   .osk-key.osk-shift,
   .osk-key.osk-toggle,
   .osk-key.osk-hide,
   .osk-key.osk-action {
-    font-size: 12px;
+    font-size: 14px;
   }
 }

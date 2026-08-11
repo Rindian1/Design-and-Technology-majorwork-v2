@@ -171,7 +171,7 @@
     var cls = 'info-trigger';
     if (SMART_FEATURES.has(key)) cls += ' info-trigger-smart';
     else if (FEATURES.has(key)) cls += ' info-trigger-feature';
-    var svg = '<svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor" aria-hidden="true">' +
+    var svg = '<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">' +
               '<rect x="7.4" y="3" width="1.2" height="5.6" rx="0.6"/>' +
               '<circle cx="8" cy="11" r="1.1"/></svg>';
     return '<span class="' + cls + '" data-info-key="' + key + '" tabindex="0" role="button" aria-label="More info about this term">' + svg + '</span>';

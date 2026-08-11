@@ -1,12 +1,13 @@
 class OnScreenKeyboard {
   static INPUT_SELECTOR =
-    'input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="url"], textarea';
+    'input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="url"], input[type="number"], textarea';
 
   constructor() {
     this._root = null;
     this._active = null;
     this._shiftOn = false;
     this._symbolLayer = false;
+    this._numeric = false;
 
     this._lettersLayout = [
       ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
@@ -32,6 +33,12 @@ class OnScreenKeyboard {
         { a: 'space', label: 'Space', cls: 'osk-space' },
         { a: 'enter', label: 'Enter', cls: 'osk-enter' },
       ],
+    ];
+
+    this._numericLayout = [
+      ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+      ['.', '-', { a: 'backspace', label: '⌫', cls: 'osk-action' }],
+      [{ a: 'enter', label: 'Enter', cls: 'osk-enter osk-fill' }],
     ];
 
     this._init();
@@ -76,6 +83,9 @@ class OnScreenKeyboard {
 
   _show(input) {
     this._active = input;
+    this._numeric = input.type === 'number' || input.getAttribute('inputmode') === 'numeric';
+    this._symbolLayer = false;
+    this._shiftOn = false;
     this._render();
     this._root.classList.remove('hidden');
     setTimeout(() => {
@@ -89,7 +99,9 @@ class OnScreenKeyboard {
   }
 
   _render() {
-    const layout = this._symbolLayer ? this._symbolsLayout : this._lettersLayout;
+    const layout = this._numeric ? this._numericLayout
+      : this._symbolLayer ? this._symbolsLayout
+      : this._lettersLayout;
     const rowsHtml = layout.map((row) => {
       const keysHtml = row.map((k) => {
         if (typeof k === 'string') {
