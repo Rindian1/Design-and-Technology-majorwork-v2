@@ -6,6 +6,9 @@
   let credentialsOk = false;
   let emailKnown = false;
 
+  const EYE_OPEN = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_CLOSED = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/><line x1="3.5" y1="3.5" x2="20.5" y2="20.5"/></svg>';
+
   document.addEventListener('DOMContentLoaded', () => {
     if (!document.getElementById('plug-grid')) return;
 
@@ -40,7 +43,7 @@
       const btn = document.getElementById('password-only-toggle');
       const isPassword = input.type === 'password';
       input.type = isPassword ? 'text' : 'password';
-      btn.textContent = isPassword ? '🙈' : '👁';
+      btn.innerHTML = isPassword ? EYE_CLOSED : EYE_OPEN;
     });
     document.getElementById('password-modal').addEventListener('click', (e) => {
       if (e.target === e.currentTarget) closePasswordModal();
@@ -67,7 +70,7 @@
     const btn = document.getElementById('tapo-password-toggle');
     const isPassword = input.type === 'password';
     input.type = isPassword ? 'text' : 'password';
-    btn.textContent = isPassword ? '🙈' : '👁';
+    btn.innerHTML = isPassword ? EYE_CLOSED : EYE_OPEN;
   }
 
   async function fetchPlugs() {
@@ -436,7 +439,7 @@
   function closePasswordModal() {
     document.getElementById('password-modal').classList.add('hidden');
     document.getElementById('password-only-pass').type = 'password';
-    document.getElementById('password-only-toggle').textContent = '👁';
+    document.getElementById('password-only-toggle').innerHTML = EYE_OPEN;
   }
 
   let editingPlugOriginalName = '';
@@ -536,7 +539,7 @@
   function closeAddModal() {
     document.getElementById('add-plug-modal').classList.add('hidden');
     document.getElementById('tapo-password').type = 'password';
-    document.getElementById('tapo-password-toggle').textContent = '👁';
+    document.getElementById('tapo-password-toggle').innerHTML = EYE_OPEN;
   }
 
   async function loadCredentials() {

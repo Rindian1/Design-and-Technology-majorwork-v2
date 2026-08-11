@@ -267,7 +267,7 @@ class RecommendationEngine:
                 cost_diff = abs(today_total_kwh - yest_total_kwh) * rate_per_kwh
                 if diff_pct > 5:
                     recs.append({
-                        'type': 'comparison', 'icon': '\U0001f4ca',
+                        'type': 'comparison', 'icon': 'chart',
                         'severity': 'warning',
                         'title': f'{diff_pct:.0f}% higher than yesterday',
                         'description': (
@@ -278,7 +278,7 @@ class RecommendationEngine:
                     })
                 elif diff_pct < -5:
                     recs.append({
-                        'type': 'comparison', 'icon': '\U0001f4ca',
+                        'type': 'comparison', 'icon': 'chart',
                         'severity': 'info',
                         'title': f'{abs(diff_pct):.0f}% lower than yesterday',
                         'description': (
@@ -289,7 +289,7 @@ class RecommendationEngine:
                     })
                 else:
                     recs.append({
-                        'type': 'comparison', 'icon': '\U0001f4ca',
+                        'type': 'comparison', 'icon': 'chart',
                         'severity': 'info',
                         'title': 'Similar to yesterday',
                         'description': (
@@ -307,7 +307,7 @@ class RecommendationEngine:
                 cost_diff = abs(today_total_kwh - lw_total_kwh) * rate_per_kwh
                 if diff_pct > 5:
                     recs.append({
-                        'type': 'comparison', 'icon': '\U0001f5d3\ufe0f',
+                        'type': 'comparison', 'icon': 'calendar',
                         'severity': 'warning',
                         'title': f'{diff_pct:.0f}% higher than last week',
                         'description': (
@@ -318,7 +318,7 @@ class RecommendationEngine:
                     })
                 elif diff_pct < -5:
                     recs.append({
-                        'type': 'comparison', 'icon': '\U0001f5d3\ufe0f',
+                        'type': 'comparison', 'icon': 'calendar',
                         'severity': 'info',
                         'title': f'{abs(diff_pct):.0f}% lower than last week',
                         'description': (
@@ -329,7 +329,7 @@ class RecommendationEngine:
                     })
                 else:
                     recs.append({
-                        'type': 'comparison', 'icon': '\U0001f5d3\ufe0f',
+                        'type': 'comparison', 'icon': 'calendar',
                         'severity': 'info',
                         'title': 'Similar to last week',
                         'description': (
@@ -344,7 +344,7 @@ class RecommendationEngine:
                 over_pct = budget_pct - 100
                 over_cost = (today_total_kwh - budget_kwh) * rate_per_kwh
                 recs.append({
-                    'type': 'budget', 'icon': '\U0001f3af',
+                    'type': 'budget', 'icon': 'target',
                     'severity': 'danger',
                     'title': f'{over_pct:.0f}% over budget',
                     'description': (
@@ -355,7 +355,7 @@ class RecommendationEngine:
                 })
             elif budget_pct > 80:
                 recs.append({
-                    'type': 'budget', 'icon': '\U0001f3af',
+                    'type': 'budget', 'icon': 'target',
                     'severity': 'warning',
                     'title': f'{budget_pct:.0f}% of budget used',
                     'description': (
@@ -366,7 +366,7 @@ class RecommendationEngine:
             else:
                 remaining = budget_kwh - today_total_kwh
                 recs.append({
-                    'type': 'budget', 'icon': '\U0001f3af',
+                    'type': 'budget', 'icon': 'target',
                     'severity': 'info',
                     'title': f'{budget_pct:.0f}% of budget used',
                     'description': (
@@ -394,7 +394,7 @@ class RecommendationEngine:
                     tip = 'Check for devices left on overnight that could be turned off or scheduled.'
                 ampm = f"{peak_hour % 12 if peak_hour % 12 != 0 else 12}:00 {'PM' if peak_hour >= 12 else 'AM'}"
                 recs.append({
-                    'type': 'peak', 'icon': '\u26a1',
+                    'type': 'peak', 'icon': 'bolt',
                     'severity': 'warning' if period in ('evening', 'overnight') else 'info',
                     'title': f'Peak at {ampm}',
                     'description': (
@@ -415,7 +415,7 @@ class RecommendationEngine:
                     deviation = ((today_total_kwh - avg) / avg) * 100
                     if deviation > 50:
                         recs.append({
-                            'type': 'anomaly', 'icon': '\U0001f514',
+                            'type': 'anomaly', 'icon': 'bell',
                             'severity': 'danger',
                             'title': 'Unusually high usage today',
                             'description': (
@@ -426,7 +426,7 @@ class RecommendationEngine:
                         })
                     elif deviation > 20:
                         recs.append({
-                            'type': 'anomaly', 'icon': '\U0001f514',
+                            'type': 'anomaly', 'icon': 'bell',
                             'severity': 'warning',
                             'title': 'Higher than usual today',
                             'description': (
@@ -437,7 +437,7 @@ class RecommendationEngine:
                         })
                     elif deviation < -30:
                         recs.append({
-                            'type': 'anomaly', 'icon': '\U0001f514',
+                            'type': 'anomaly', 'icon': 'bell',
                             'severity': 'info',
                             'title': 'Well below average today',
                             'description': (
@@ -456,7 +456,7 @@ class RecommendationEngine:
                     overnight_pct = (overnight_total / today_total_kwh * 100) if today_total_kwh > 0 else 0
                     if overnight_pct > 20:
                         recs.append({
-                            'type': 'overnight', 'icon': '\U0001f319',
+                            'type': 'overnight', 'icon': 'moon',
                             'severity': 'warning',
                             'title': f'{overnight_pct:.0f}% usage overnight',
                             'description': (
@@ -472,7 +472,7 @@ class RecommendationEngine:
                 peak_hour = peak_record.timestamp.hour
                 if peak_hour >= 18 or peak_hour < 6:
                     recs.append({
-                        'type': 'tip', 'icon': '\U0001f4a1',
+                        'type': 'tip', 'icon': 'bulb',
                         'severity': 'info',
                         'title': 'Shift your peak',
                         'description': (
@@ -489,7 +489,7 @@ class RecommendationEngine:
                     overnight_pct = (overnight_total / today_total_kwh * 100) if today_total_kwh > 0 else 0
                     if overnight_pct > 15:
                         recs.append({
-                            'type': 'tip', 'icon': '\U0001f4a1',
+                            'type': 'tip', 'icon': 'bulb',
                             'severity': 'info',
                             'title': 'Reduce standby power',
                             'description': (
@@ -500,7 +500,7 @@ class RecommendationEngine:
 
             tip_index = parsed.timetuple().tm_yday % len(TIPS_POOL)
             recs.append({
-                'type': 'tip', 'icon': '\U0001f4a1',
+                'type': 'tip', 'icon': 'bulb',
                 'severity': 'info',
                 'title': 'Energy saving tip',
                 'description': TIPS_POOL[tip_index]
@@ -773,7 +773,7 @@ class RecommendationEngine:
                     daily_saving = peak_kwh * (peak_charge - offpeak_charge) / 100
                     yearly_saving = daily_saving * 365
                     recs.append({
-                        'type': 'behaviour', 'icon': '\u26a1',
+                        'type': 'behaviour', 'icon': 'bolt',
                         'severity': 'warning' if peak_kwh > 2 else 'info',
                         'title': f'Shift peak usage to save',
                         'description': (
@@ -784,7 +784,7 @@ class RecommendationEngine:
                     })
                     if peak_cost > total_cost * 0.5:
                         recs.append({
-                            'type': 'behaviour', 'icon': '\U0001f4a1',
+                            'type': 'behaviour', 'icon': 'bulb',
                             'severity': 'warning',
                             'title': 'Majority of cost in peak',
                             'description': (
@@ -808,7 +808,7 @@ class RecommendationEngine:
                     periods.append('overnight')
 
                 recs.append({
-                    'type': 'behaviour', 'icon': '\u23f0',
+                    'type': 'behaviour', 'icon': 'clock',
                     'severity': 'info',
                     'title': f'Highest usage in the {periods[0]}',
                     'description': (
@@ -826,7 +826,7 @@ class RecommendationEngine:
                     high_total = sum(r.watt_usage for r in high_hours) / 1000
                     high_cost = high_total * rate_per_kwh
                     recs.append({
-                        'type': 'behaviour', 'icon': '\U0001f4ca',
+                        'type': 'behaviour', 'icon': 'chart',
                         'severity': 'info',
                         'title': f'{len(high_hours)} hours above average',
                         'description': (
@@ -838,7 +838,7 @@ class RecommendationEngine:
 
             if not recs:
                 recs.append({
-                    'type': 'behaviour', 'icon': '\U0001f4a1',
+                    'type': 'behaviour', 'icon': 'bulb',
                     'severity': 'info',
                     'title': 'Steady usage pattern',
                     'description': (

@@ -1,3 +1,22 @@
+const INSIGHT_ICONS = {
+    chart: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    target: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
+    bolt: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+    moon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+    bulb: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'
+};
+
+function insightIcon(key, size) {
+    var svg = INSIGHT_ICONS[key] || INSIGHT_ICONS.bulb;
+    if (size && size !== 22) {
+        svg = svg.replace(/width="22"/g, 'width="' + size + '"').replace(/height="22"/g, 'height="' + size + '"');
+    }
+    return svg;
+}
+
 class RecommendationsManager {
     constructor() {
         this._generalContainer = document.getElementById('general-container');
@@ -118,7 +137,7 @@ class RecommendationsManager {
                 <div class="tips-list">
                     ${tips.map(t => `
                         <div class="rec-card severity-${t.severity || 'info'}">
-                            <div class="rec-icon">${t.icon || '\u{1f4a1}'}</div>
+                            <div class="rec-icon">${insightIcon(t.icon)}</div>
                             <div class="rec-body">
                                 <div class="rec-title">${this._escapeHtml(t.title || '')}</div>
                                 <div class="rec-description">${this._escapeHtml(t.description || '')}</div>
@@ -131,7 +150,7 @@ class RecommendationsManager {
 
         const bannerHtml = tipBanner ? `
             <div class="tip-banner">
-                <span class="tip-banner-icon">\u{1f4a1}</span>
+                <span class="tip-banner-icon">${insightIcon('bulb', 18)}</span>
                 <span class="tip-banner-text"><strong>Tip:</strong> ${this._escapeHtml(tipBanner)}</span>
             </div>
         ` : '';
@@ -414,7 +433,7 @@ class RecommendationsManager {
         return `
             <div class="recs-appliance">
                 <div class="rec-card severity-info">
-                    <div class="rec-icon">\u{1f50c}</div>
+                    <div class="rec-icon"><svg viewBox="0 0 48 48" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="4" width="20" height="28" rx="3"/><rect x="18" y="32" width="4" height="6" rx="1"/><rect x="26" y="32" width="4" height="6" rx="1"/><rect x="14" y="40" width="20" height="4" rx="1"/><line x1="17" y1="12" x2="17" y2="20"/><line x1="31" y1="12" x2="31" y2="20"/><line x1="20" y1="14" x2="28" y2="14"/><line x1="20" y1="18" x2="28" y2="18"/></svg></div>
                     <div class="rec-body">
                         <div class="rec-title">${this._escapeHtml(rec.recommended_model || 'Recommended upgrade')}</div>
                         <div class="rec-description">${this._escapeHtml(rec.reasoning || '')}</div>
@@ -595,7 +614,7 @@ class RecommendationsManager {
         const heading = withHeading ? this._applianceHeading() : '';
         container.innerHTML = heading + `
             <div class="recs-state">
-                <div class="recs-state-icon">\u{1f4a1}</div>
+                <div class="recs-state-icon">${insightIcon('bulb', 40)}</div>
                 <p class="recs-state-text">${this._escapeHtml(msg)}</p>
             </div>
         `;

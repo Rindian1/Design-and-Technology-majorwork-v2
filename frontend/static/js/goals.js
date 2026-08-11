@@ -481,7 +481,11 @@ class GoalsManager {
         const notif = document.createElement('div');
         notif.className = `goal-notification goal-notification-${type}`;
 
-        const icons = { claim: '&#127873;', failure: '&#9888;', reset: '&#127881;' };
+        const icons = {
+            claim: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><rect x="5" y="12" width="14" height="10" rx="1"/><path d="M12 8v14"/><path d="M7 8c0-2 2-3 5-3s5 1 5 3"/></svg>',
+            failure: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+            reset: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 5 3 11 9 11"/></svg>'
+        };
         const titles = {
             claim: 'Goal reached! Claim your reward!',
             failure: 'Goal was not met and has been reset. Try again!',

@@ -300,6 +300,7 @@ body {
 .rec-card.severity-warning { border-left-color: #ffab00; }
 .rec-card.severity-danger { border-left-color: #ff5252; }
 .rec-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; line-height: 1; }
+.rec-icon svg { display: block; }
 .rec-body { flex: 1; min-width: 0; }
 .rec-title {
   font-size: 14px;
@@ -320,6 +321,7 @@ body {
   border-radius: 24px;
 }
 .recs-state-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
+.recs-state-icon svg { display: block; }
 .recs-state-text { font-size: 13px; color: var(--text-dim); margin-top: 12px; }
 .recs-state .loading-spinner { margin: 0 auto 12px; }
 .recs-error .recs-state-text { color: #ff5252; }
@@ -712,6 +714,7 @@ body {
   flex-shrink: 0;
   margin-top: 1px;
 }
+.tip-banner-icon svg { display: block; }
 .tip-banner-text {
   font-size: 13px;
   color: var(--text-light);
@@ -2120,6 +2123,7 @@ body {
   line-height: 1;
 }
 .eye-btn:hover { color: var(--text-primary); }
+.eye-btn svg { display: block; }
 .preset-tags {
   display: flex;
   gap: 6px;
@@ -2308,6 +2312,7 @@ body {
   flex-shrink: 0;
   user-select: none;
 }
+.info-trigger svg { display: block; }
 .info-trigger:hover {
   background: var(--accent);
   color: #fff;

@@ -132,7 +132,7 @@ class AuthManager {
         html += `<div class="add-plug-columns">`;
         html += `<div class="form-section"><h3 class="form-section-title">TAPO ACCOUNT INFO</h3>`;
         html += `<div class="form-group"><label for="plug-email">Email</label><input type="email" id="plug-email" class="form-input" placeholder="your@email.com" autocomplete="email" value="${this._escapeHtml(snapshot.email || '')}"></div>`;
-        html += `<div class="form-group"><label for="plug-password">Password</label><div class="password-wrap"><input type="password" id="plug-password" class="form-input" placeholder="TAPO account password" autocomplete="off"><button class="eye-btn" id="plug-password-toggle" type="button" aria-label="Toggle password visibility">👁</button></div></div>`;
+        html += `<div class="form-group"><label for="plug-password">Password</label><div class="password-wrap"><input type="password" id="plug-password" class="form-input" placeholder="TAPO account password" autocomplete="off"><button class="eye-btn" id="plug-password-toggle" type="button" aria-label="Toggle password visibility"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>`;
         html += `</div>`;
         html += `<div class="form-section"><h3 class="form-section-title">PLUG INFO</h3>`;
         html += `<div class="form-group"><label for="plug-ip">IP address</label><input type="text" id="plug-ip" class="form-input" placeholder="xxx.xxx.x.xxx" autocomplete="off" value="${this._escapeHtml(snapshot.ip_address || '')}"></div>`;
